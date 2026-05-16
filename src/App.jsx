@@ -627,9 +627,22 @@ function TreasureHunt({ team, onUpdate }) {
   useEffect(() => { setTimeout(() => { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }, 300); }, []);
 
   const handleViolation = useCallback((v) => {
-    if (v === "fullscreen_exit") { setViolation("Return to fullscreen!"); setTimeout(() => document.documentElement.requestFullscreen?.(), 500); }
-    else setViolation(`Tab switch detected! Violation logged.`);
-  }, []);
+    if (v === "fullscreen_exit") { 
+      setViolation("Return to fullscreen!"); 
+      setTimeout(() => document.documentElement.requestFullscreen?.(), 500); 
+    } else {
+      setViolation(`Tab/App switch detected! A penalty has been added.`);
+      (async () => {
+        const teams = await getTeams();
+        if (teams[team.id]) {
+          teams[team.id].hunt_penalties = (teams[team.id].hunt_penalties || 0) + 1;
+          await setTeams(teams);
+          onUpdate(teams[team.id]);
+          setPenalties(teams[team.id].hunt_penalties);
+        }
+      })();
+    }
+  }, [team.id, onUpdate]);
 
   useAntiCheat(true, handleViolation);
 
