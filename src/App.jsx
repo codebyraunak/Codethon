@@ -618,6 +618,7 @@ function TreasureHunt({ team, onUpdate }) {
   const [level, setLevel] = useState(team.hunt_level || 1);
   const [code, setCode] = useState("");
   const [penalties, setPenalties] = useState(team.hunt_penalties || 0);
+  const [wrongAttempts, setWrongAttempts] = useState(team.hunt_wrong_attempts || 0);
   const [error, setError] = useState("");
   const [shaking, setShaking] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -655,12 +656,13 @@ function TreasureHunt({ team, onUpdate }) {
       setError("");
       const nextLevel = level + 1;
       const isComplete = nextLevel > TREASURE_HUNT.length;
-      const huntScore = isComplete ? Math.max(10, 100 - penalties * 5) : (level * 20);
+      const huntScore = isComplete ? Math.max(10, 100 - penalties * 10 - wrongAttempts * 2) : (level * 20);
       const teams = await getTeams();
       if (teams[team.id]) {
         teams[team.id].hunt_level = nextLevel;
         teams[team.id].hunt_score = huntScore;
         teams[team.id].hunt_penalties = penalties;
+        teams[team.id].hunt_wrong_attempts = wrongAttempts;
         teams[team.id].total_score = (teams[team.id].mcq_score || 0) + huntScore;
         await setTeams(teams);
         onUpdate(teams[team.id]);
@@ -671,12 +673,12 @@ function TreasureHunt({ team, onUpdate }) {
         if (isComplete) { setCompleted(true); } else { setLevel(nextLevel); }
       }, 1500);
     } else {
-      const newPenalties = penalties + 1;
-      setPenalties(newPenalties);
+      const newWrong = wrongAttempts + 1;
+      setWrongAttempts(newWrong);
       setShaking(true);
-      setError(`Wrong code! -1 mark deducted. Total penalties: ${newPenalties}`);
+      setError(`Wrong code! Total wrong attempts: ${newWrong}`);
       const teams = await getTeams();
-      if (teams[team.id]) { teams[team.id].hunt_penalties = newPenalties; await setTeams(teams); }
+      if (teams[team.id]) { teams[team.id].hunt_wrong_attempts = newWrong; await setTeams(teams); }
       setTimeout(() => setShaking(false), 500);
     }
   };
@@ -882,7 +884,7 @@ function AdminPanel() {
             <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", fontWeight: 700 }}>Live Leaderboard</div>
             <table className="lb-table">
               <thead>
-                <tr><th>Rank</th><th>Team</th><th>MCQ</th><th>Hunt Lvl</th><th>Penalties</th><th>Total</th></tr>
+                <tr><th>Rank</th><th>Team</th><th>MCQ</th><th>Hunt Lvl</th><th>Tab Penalties</th><th>Wrong Codes</th><th>Total</th></tr>
               </thead>
               <tbody>
                 {teamArr.map((t, i) => (
@@ -892,6 +894,7 @@ function AdminPanel() {
                     <td><span className="score-pill">{t.mcq_score || 0} {t.mcq_submitted ? "✓" : ""}</span></td>
                     <td className="mono">{t.hunt_level || 1}/{TREASURE_HUNT.length + 1}</td>
                     <td className="mono" style={{ color: "var(--accent2)" }}>{t.hunt_penalties || 0}</td>
+                    <td className="mono" style={{ color: "var(--accent3)" }}>{t.hunt_wrong_attempts || 0}</td>
                     <td><span className="score-pill" style={{ color: "var(--accent)", fontWeight: 700 }}>{t.total_score || 0}</span></td>
                   </tr>
                 ))}
