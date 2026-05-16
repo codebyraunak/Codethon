@@ -28,32 +28,32 @@ const MCQ_QUESTIONS = [
   { id: 20, q: "What is `0b1010` in decimal?", options: ["8", "10", "12", "2"], ans: 1 },
 ];
 
-const TREASURE_HUNT = [
-  {
-    level: 1,
-    hint: "🔍 Clue 1: The place where knowledge is stored, books are your friends. Find the secret code hidden near the entrance of this place.",
-    code: "LIB2025",
-    next_hint: "📚 Well done! Clue 2: Head to the place where machines think and keyboards speak. Look under the third table from the door.",
-  },
-  {
-    level: 2,
-    hint: "💻 Clue 2: Head to the place where machines think and keyboards speak. Look under the third table from the door.",
-    code: "LAB4567",
-    next_hint: "🍽️ Clue 3: When hunger strikes, this is where everyone gathers. The code is on the notice board near the counter.",
-  },
-  {
-    level: 3,
-    hint: "🍽️ Clue 3: When hunger strikes, this is where everyone gathers. The code is on the notice board near the counter.",
-    code: "CANTEEN8",
-    next_hint: "🏆 Clue 4 (Final!): Return to where you started this journey — the main hall. Look for a sealed envelope on the stage. You're almost there!",
-  },
-  {
-    level: 4,
-    hint: "🏆 Final Clue: Return to where you started this journey — the main hall. Look for a sealed envelope on the stage. You're almost there!",
-    code: "WINNER99",
-    next_hint: "COMPLETE",
-  },
-];
+const TREASURE_HUNT = {
+  PathA: [
+    { level: 1, code: "START-A", next_hint: "Path A Clue 2: Head to the lab." },
+    { level: 2, code: "LAB-A", next_hint: "Path A Clue 3: Go to the canteen." },
+    { level: 3, code: "CANT-A", next_hint: "Path A Clue 4: Return to the main hall." },
+    { level: 4, code: "WIN-A", next_hint: "COMPLETE" }
+  ],
+  PathB: [
+    { level: 1, code: "START-B", next_hint: "Path B Clue 2: Head to the library." },
+    { level: 2, code: "LIB-B", next_hint: "Path B Clue 3: Go to the sports room." },
+    { level: 3, code: "SPORT-B", next_hint: "Path B Clue 4: Return to the main hall." },
+    { level: 4, code: "WIN-B", next_hint: "COMPLETE" }
+  ],
+  PathC: [
+    { level: 1, code: "START-C", next_hint: "Path C Clue 2: Head to the parking." },
+    { level: 2, code: "PARK-C", next_hint: "Path C Clue 3: Go to the admin block." },
+    { level: 3, code: "ADMIN-C", next_hint: "Path C Clue 4: Return to the main hall." },
+    { level: 4, code: "WIN-C", next_hint: "COMPLETE" }
+  ],
+  PathD: [
+    { level: 1, code: "START-D", next_hint: "Path D Clue 2: Head to the auditorium." },
+    { level: 2, code: "AUDI-D", next_hint: "Path D Clue 3: Go to the garden." },
+    { level: 3, code: "GARD-D", next_hint: "Path D Clue 4: Return to the main hall." },
+    { level: 4, code: "WIN-D", next_hint: "COMPLETE" }
+  ]
+};
 
 import { db } from './firebase';
 import { ref, get, set as setFirebase } from 'firebase/database';
@@ -380,9 +380,6 @@ function LoginScreen({ onLogin }) {
           </button>
         </div>
 
-        <div className="text-sm text-center mt-4" style={{ marginTop: 20 }}>
-          Admins: use team name 'admin' and your password to login
-        </div>
       </div>
     </div>
   );
@@ -616,13 +613,14 @@ function MCQRound({ team, onUpdate }) {
 // ─── TREASURE HUNT ────────────────────────────────────────────────────────────
 function TreasureHunt({ team, onUpdate }) {
   const [level, setLevel] = useState(team.hunt_level || 1);
+  const [branch, setBranch] = useState(team.hunt_branch || null);
   const [code, setCode] = useState("");
   const [penalties, setPenalties] = useState(team.hunt_penalties || 0);
   const [wrongAttempts, setWrongAttempts] = useState(team.hunt_wrong_attempts || 0);
   const [error, setError] = useState("");
   const [shaking, setShaking] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [completed, setCompleted] = useState(level > TREASURE_HUNT.length);
+  const [completed, setCompleted] = useState(branch ? level > TREASURE_HUNT[branch].length : false);
   const [violation, setViolation] = useState("");
 
   useEffect(() => { setTimeout(() => { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }, 300); }, []);
@@ -647,18 +645,41 @@ function TreasureHunt({ team, onUpdate }) {
 
   useAntiCheat(true, handleViolation);
 
-  const clue = TREASURE_HUNT.find(c => c.level === level);
-
   const submit = async () => {
     if (!code.trim()) return;
-    if (code.trim().toUpperCase() === clue?.code) {
+    const inputCode = code.trim().toUpperCase();
+    
+    let matchedBranch = null;
+    let matchedClue = null;
+    
+    if (level === 1) {
+      for (const [bName, clues] of Object.entries(TREASURE_HUNT)) {
+        const c = clues.find(c => c.level === 1);
+        if (c && c.code === inputCode) {
+          matchedBranch = bName;
+          matchedClue = c;
+          break;
+        }
+      }
+    } else {
+      matchedBranch = branch;
+      matchedClue = TREASURE_HUNT[branch].find(c => c.level === level);
+      if (matchedClue && matchedClue.code !== inputCode) {
+        matchedClue = null;
+      }
+    }
+
+    if (matchedClue) {
       setSuccess(true);
       setError("");
       const nextLevel = level + 1;
-      const isComplete = nextLevel > TREASURE_HUNT.length;
+      const branchLength = TREASURE_HUNT[matchedBranch].length;
+      const isComplete = nextLevel > branchLength;
       const huntScore = isComplete ? Math.max(10, 100 - penalties * 10 - wrongAttempts * 2) : (level * 20);
+      
       const teams = await getTeams();
       if (teams[team.id]) {
+        teams[team.id].hunt_branch = matchedBranch;
         teams[team.id].hunt_level = nextLevel;
         teams[team.id].hunt_score = huntScore;
         teams[team.id].hunt_penalties = penalties;
@@ -667,10 +688,16 @@ function TreasureHunt({ team, onUpdate }) {
         await setTeams(teams);
         onUpdate(teams[team.id]);
       }
+      
       setTimeout(() => {
         setSuccess(false);
         setCode("");
-        if (isComplete) { setCompleted(true); } else { setLevel(nextLevel); }
+        if (isComplete) { 
+          setCompleted(true); 
+        } else { 
+          setLevel(nextLevel); 
+          if (!branch) setBranch(matchedBranch);
+        }
       }, 1500);
     } else {
       const newWrong = wrongAttempts + 1;
@@ -689,15 +716,11 @@ function TreasureHunt({ team, onUpdate }) {
         <div className="complete-badge">
           <div className="complete-icon">🏆</div>
           <div style={{ fontSize: 32, fontWeight: 900, color: "var(--accent3)", marginBottom: 8 }}>HUNT COMPLETE!</div>
-          <div className="text-sm" style={{ marginBottom: 24 }}>You've found all the clues! Amazing work.</div>
+          <div className="text-sm" style={{ marginBottom: 24 }}>You've found all the clues on {branch.replace("Path", "Path ")}! Amazing work.</div>
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
             <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "16px 24px" }}>
-              <div className="mono" style={{ fontSize: 28, color: "var(--accent)", fontWeight: 700 }}>{Math.max(10, 100 - penalties * 5)}</div>
+              <div className="mono" style={{ fontSize: 28, color: "var(--accent)", fontWeight: 700 }}>{team.hunt_score || 0}</div>
               <div className="text-sm">hunt points</div>
-            </div>
-            <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "16px 24px" }}>
-              <div className="mono" style={{ fontSize: 28, color: "var(--accent2)", fontWeight: 700 }}>{penalties}</div>
-              <div className="text-sm">wrong attempts</div>
             </div>
           </div>
         </div>
@@ -705,38 +728,38 @@ function TreasureHunt({ team, onUpdate }) {
     </div>
   );
 
+  const displayHint = level === 1 
+    ? "🎯 Enter your starting code to discover your assigned path." 
+    : TREASURE_HUNT[branch]?.find(c => c.level === level - 1)?.next_hint || "No hint found.";
+
+  const maxLevels = branch ? TREASURE_HUNT[branch].length : 4;
+  const progressArr = new Array(maxLevels).fill(0);
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", paddingTop: 52 }}>
       {violation && <ViolationAlert msg={violation} onDismiss={() => setViolation("")} />}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "32px 20px" }}>
         {/* Progress */}
         <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
-          {TREASURE_HUNT.map((c, i) => (
+          {progressArr.map((_, i) => (
             <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: i < level - 1 ? "var(--accent)" : i === level - 1 ? "var(--accent3)" : "var(--border)", transition: "background 0.4s" }}></div>
           ))}
         </div>
 
         <div className="hunt-level">
-          <div className="hunt-badge">CLUE {level} / {TREASURE_HUNT.length}</div>
-          {penalties > 0 && <div className="hunt-penalty">-{penalties} marks (wrong attempts)</div>}
+          <div className="hunt-badge">CLUE {level} / {maxLevels} {branch ? `(${branch.replace("Path", "Path ")})` : ""}</div>
+          {penalties > 0 && <div className="hunt-penalty">-{penalties * 10} marks (tab switches)</div>}
         </div>
 
-        <div className={`hunt-hint ${success ? "success-flash" : ""}`}>{clue?.hint}</div>
+        <div className={`hunt-hint ${success ? "success-flash" : ""}`}>{displayHint}</div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label className="label">Enter the secret code you found</label>
+          <label className="label">{level === 1 ? "Enter your starting code" : "Enter the secret code you found"}</label>
           <input className={`input code-input ${shaking ? "shake" : ""}`} placeholder="_ _ _ _ _ _ _ _" value={code} onChange={e => setCode(e.target.value.toUpperCase())} onKeyDown={e => e.key === "Enter" && submit()} />
           {error && <div className="text-danger mono" style={{ fontSize: 13 }}>⚠ {error}</div>}
           {success && <div style={{ color: "var(--accent)", fontFamily: "Space Mono", fontSize: 13 }}>✓ Correct! Loading next clue...</div>}
           <button className="btn btn-primary" onClick={submit} disabled={!code.trim() || success}>Unlock Next Clue →</button>
         </div>
-
-        {level > 1 && (
-          <div style={{ marginTop: 28, background: "var(--bg3)", borderRadius: 8, padding: "16px 20px", border: "1px solid var(--border)" }}>
-            <div className="text-sm" style={{ fontWeight: 600, marginBottom: 8, color: "var(--text)" }}>Previous clue answer led you to:</div>
-            <div style={{ fontSize: 14, color: "var(--accent4)" }}>{TREASURE_HUNT[level - 2]?.next_hint}</div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -892,7 +915,7 @@ function AdminPanel() {
                     <td className={`mono ${i===0?"rank-1":i===1?"rank-2":i===2?"rank-3":""}`} style={{ fontSize: 16 }}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i + 1}`}</td>
                     <td><div style={{ fontWeight: 700 }}>{t.name}</div><div className="mono" style={{ fontSize: 11, color: "var(--text2)" }}>{t.id}</div></td>
                     <td><span className="score-pill">{t.mcq_score || 0} {t.mcq_submitted ? "✓" : ""}</span></td>
-                    <td className="mono">{t.hunt_level || 1}/{TREASURE_HUNT.length + 1}</td>
+                    <td className="mono">{t.hunt_level || 1}/{TREASURE_HUNT[t.hunt_branch || "PathA"]?.length || 4} {t.hunt_branch ? `(${t.hunt_branch.replace("Path","")})` : ""}</td>
                     <td className="mono" style={{ color: "var(--accent2)" }}>{t.hunt_penalties || 0}</td>
                     <td className="mono" style={{ color: "var(--accent3)" }}>{t.hunt_wrong_attempts || 0}</td>
                     <td><span className="score-pill" style={{ color: "var(--accent)", fontWeight: 700 }}>{t.total_score || 0}</span></td>
