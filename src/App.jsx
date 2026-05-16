@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const ADMIN_PASSWORD = "admin@safeevent2025";
+const ADMIN_PASSWORD = "admin@2";
 const MCQ_DURATION = 30 * 60; // 30 minutes in seconds
 
 const MCQ_QUESTIONS = [
@@ -308,7 +308,6 @@ function ViolationAlert({ msg, onDismiss }) {
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
-  const [teamId, setTeamId] = useState("");
   const [teamName, setTeamName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -316,24 +315,26 @@ function LoginScreen({ onLogin }) {
   const [mode, setMode] = useState("login"); // login | register | admin
 
   const register = async () => {
-    if (!teamId.trim() || !teamName.trim() || !password.trim()) { setError("All fields required"); return; }
-    if (teamId.length < 3) { setError("Team ID must be at least 3 characters"); return; }
+    if (!teamName.trim() || !password.trim()) { setError("All fields required"); return; }
+    if (teamName.length < 3) { setError("Team Name must be at least 3 characters"); return; }
     setLoading(true);
     const teams = await getTeams();
-    if (teams[teamId.toLowerCase()]) { setError("Team ID already taken. Try another."); setLoading(false); return; }
-    const team = { id: teamId.toLowerCase(), name: teamName.trim(), password, mcq_score: 0, mcq_answers: {}, mcq_submitted: false, hunt_level: 1, hunt_score: 0, hunt_penalties: 0, total_score: 0 };
-    teams[teamId.toLowerCase()] = team;
+    const id = teamName.trim().toLowerCase();
+    if (teams[id]) { setError("Team Name already taken. Try another."); setLoading(false); return; }
+    const team = { id, name: teamName.trim(), password, mcq_score: 0, mcq_answers: {}, mcq_submitted: false, hunt_level: 1, hunt_score: 0, hunt_penalties: 0, total_score: 0 };
+    teams[id] = team;
     await setTeams(teams);
     onLogin(team, "team");
     setLoading(false);
   };
 
   const login = async () => {
-    if (!teamId.trim() || !password.trim()) { setError("All fields required"); return; }
+    if (!teamName.trim() || !password.trim()) { setError("All fields required"); return; }
     if (password === ADMIN_PASSWORD) { onLogin(null, "admin"); return; }
     setLoading(true);
     const teams = await getTeams();
-    const team = teams[teamId.toLowerCase()];
+    const id = teamName.trim().toLowerCase();
+    const team = teams[id];
     if (!team) { setError("Team not found"); setLoading(false); return; }
     if (team.password !== password) { setError("Wrong password"); setLoading(false); return; }
     onLogin(team, "team");
@@ -359,15 +360,9 @@ function LoginScreen({ onLogin }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
-            <label className="label">Team ID</label>
-            <input className="input mono" placeholder="e.g. team01" value={teamId} onChange={e => setTeamId(e.target.value)} />
+            <label className="label">Team Name</label>
+            <input className="input" placeholder="e.g. The Debug Squad" value={teamName} onChange={e => setTeamName(e.target.value)} />
           </div>
-          {mode === "register" && (
-            <div>
-              <label className="label">Team Name</label>
-              <input className="input" placeholder="e.g. The Debug Squad" value={teamName} onChange={e => setTeamName(e.target.value)} />
-            </div>
-          )}
           <div>
             <label className="label">Password</label>
             <input className="input mono" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && (mode === "register" ? register() : login())} />
@@ -381,7 +376,7 @@ function LoginScreen({ onLogin }) {
         </div>
 
         <div className="text-sm text-center mt-4" style={{ marginTop: 20 }}>
-          Admins: use your admin password to login with any Team ID
+          Admins: use your admin password to login
         </div>
       </div>
     </div>
@@ -459,6 +454,23 @@ function MCQRound({ team, onUpdate }) {
     return () => clearInterval(i);
   }, [submitted]);
 
+  const [rank, setRank] = useState(null);
+  const answersRef = useRef(answers);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
+
+  useEffect(() => {
+    if (!submitted) return;
+    const fetchRank = async () => {
+      const teams = await getTeams();
+      const arr = Object.values(teams).sort((a, b) => (b.mcq_score || 0) - (a.mcq_score || 0));
+      const idx = arr.findIndex(t => t.id === team.id);
+      if (idx !== -1) setRank(idx + 1);
+    };
+    fetchRank();
+    const i = setInterval(fetchRank, 5000);
+    return () => clearInterval(i);
+  }, [submitted, team.id]);
+
   const handleViolation = useCallback((v) => {
     if (submitted) return;
     setViolations(prev => { const n = typeof v === "number" ? v : prev + 1; return n; });
@@ -466,9 +478,24 @@ function MCQRound({ team, onUpdate }) {
       setViolation("⚠️ Fullscreen exited! Return to fullscreen immediately.");
       setTimeout(enterFullscreen, 1000);
     } else {
-      setViolation(`Tab switch detected! Warning #${typeof v === "number" ? v : violations + 1}. This will be reported.`);
+      setViolation(`Tab switch detected! Your test has been automatically submitted.`);
+      (async () => {
+        let score = 0;
+        MCQ_QUESTIONS.forEach((q, i) => { if (answersRef.current[i] === q.ans) score += 2; });
+        const teams = await getTeams();
+        if (teams[team.id]) {
+          teams[team.id].mcq_score = score;
+          teams[team.id].mcq_answers = answersRef.current;
+          teams[team.id].mcq_submitted = true;
+          teams[team.id].total_score = score + (teams[team.id].hunt_score || 0);
+          await setTeams(teams);
+          onUpdate(teams[team.id]);
+        }
+        setSubmitted(true);
+        if (document.fullscreenElement) document.exitFullscreen();
+      })();
     }
-  }, [submitted, violations]);
+  }, [submitted, team.id, onUpdate]);
 
   useAntiCheat(!submitted, handleViolation);
 
@@ -499,11 +526,19 @@ function MCQRound({ team, onUpdate }) {
         <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
         <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>MCQ Submitted!</div>
         <div className="text-sm" style={{ marginBottom: 24 }}>Your answers have been recorded. Wait for Round 2.</div>
-        <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "20px" }}>
-          <div className="mono" style={{ fontSize: 40, color: "var(--accent)", fontWeight: 700 }}>
-            {Object.values(answers).filter((a, i) => a === MCQ_QUESTIONS[i]?.ans).length * 2}
+        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+          <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "20px", flex: 1 }}>
+            <div className="mono" style={{ fontSize: 40, color: "var(--accent)", fontWeight: 700 }}>
+              {Object.values(answers).filter((a, i) => a === MCQ_QUESTIONS[i]?.ans).length * 2}
+            </div>
+            <div className="text-sm">points scored</div>
           </div>
-          <div className="text-sm">points scored (out of {MCQ_QUESTIONS.length * 2})</div>
+          {rank !== null && (
+            <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "20px", flex: 1 }}>
+              <div className="mono" style={{ fontSize: 40, color: "var(--accent3)", fontWeight: 700 }}>#{rank}</div>
+              <div className="text-sm">current rank</div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -826,15 +861,15 @@ function AdminPanel() {
           </div>
 
           <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", marginBottom: 24 }}>
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", fontWeight: 700 }}>Team Overview</div>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", fontWeight: 700 }}>Live Leaderboard</div>
             <table className="lb-table">
               <thead>
-                <tr><th>#</th><th>Team</th><th>MCQ</th><th>Hunt Lvl</th><th>Penalties</th><th>Total</th></tr>
+                <tr><th>Rank</th><th>Team</th><th>MCQ</th><th>Hunt Lvl</th><th>Penalties</th><th>Total</th></tr>
               </thead>
               <tbody>
                 {teamArr.map((t, i) => (
                   <tr key={t.id}>
-                    <td className="mono" style={{ fontSize: 13 }}>{i + 1}</td>
+                    <td className={`mono ${i===0?"rank-1":i===1?"rank-2":i===2?"rank-3":""}`} style={{ fontSize: 16 }}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i + 1}`}</td>
                     <td><div style={{ fontWeight: 700 }}>{t.name}</div><div className="mono" style={{ fontSize: 11, color: "var(--text2)" }}>{t.id}</div></td>
                     <td><span className="score-pill">{t.mcq_score || 0} {t.mcq_submitted ? "✓" : ""}</span></td>
                     <td className="mono">{t.hunt_level || 1}/{TREASURE_HUNT.length + 1}</td>
