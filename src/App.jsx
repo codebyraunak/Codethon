@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const ADMIN_PASSWORD = "Anvaya22026";
+const ADMIN_PASSWORD = "Anvaya@2026";
 const MCQ_DURATION = 30 * 60; // 30 minutes in seconds
 
 const MCQ_QUESTIONS = [
@@ -317,9 +317,10 @@ function LoginScreen({ onLogin }) {
   const register = async () => {
     if (!teamName.trim() || !password.trim()) { setError("All fields required"); return; }
     if (teamName.length < 3) { setError("Team Name must be at least 3 characters"); return; }
+    const id = teamName.trim().toLowerCase();
+    if (id === "admin") { setError("This team name is reserved."); return; }
     setLoading(true);
     const teams = await getTeams();
-    const id = teamName.trim().toLowerCase();
     if (teams[id]) { setError("Team Name already taken. Try another."); setLoading(false); return; }
     const team = { id, name: teamName.trim(), password, mcq_score: 0, mcq_answers: {}, mcq_submitted: false, hunt_level: 1, hunt_score: 0, hunt_penalties: 0, total_score: 0 };
     teams[id] = team;
@@ -330,10 +331,14 @@ function LoginScreen({ onLogin }) {
 
   const login = async () => {
     if (!teamName.trim() || !password.trim()) { setError("All fields required"); return; }
-    if (password === ADMIN_PASSWORD) { onLogin(null, "admin"); return; }
+    const id = teamName.trim().toLowerCase();
+    if (id === "admin") {
+      if (password === ADMIN_PASSWORD) { onLogin(null, "admin"); }
+      else { setError("Wrong password"); }
+      return;
+    }
     setLoading(true);
     const teams = await getTeams();
-    const id = teamName.trim().toLowerCase();
     const team = teams[id];
     if (!team) { setError("Team not found"); setLoading(false); return; }
     if (team.password !== password) { setError("Wrong password"); setLoading(false); return; }
@@ -376,7 +381,7 @@ function LoginScreen({ onLogin }) {
         </div>
 
         <div className="text-sm text-center mt-4" style={{ marginTop: 20 }}>
-          Admins: use your admin password to login
+          Admins: use team name 'admin' and your password to login
         </div>
       </div>
     </div>
