@@ -88,15 +88,27 @@ function useAntiCheat(active, onViolation) {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) onViolation("fullscreen_exit");
     };
+    const handleBlur = () => {
+      violationsRef.current++;
+      onViolation(violationsRef.current);
+    };
+    const blockContextMenu = (e) => e.preventDefault();
+    
     document.addEventListener("visibilitychange", handleVisibility);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
+    window.addEventListener("blur", handleBlur);
+    document.addEventListener("contextmenu", blockContextMenu);
+
     const blockKeys = (e) => {
-      if ((e.ctrlKey && ["t","w","n","r"].includes(e.key.toLowerCase())) || e.key === "F5") e.preventDefault();
+      if ((e.ctrlKey && ["t","w","n","r","c","v","p"].includes(e.key.toLowerCase())) || e.key === "F5") e.preventDefault();
     };
     document.addEventListener("keydown", blockKeys);
+    
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      window.removeEventListener("blur", handleBlur);
+      document.removeEventListener("contextmenu", blockContextMenu);
       document.removeEventListener("keydown", blockKeys);
     };
   }, [active, onViolation]);
