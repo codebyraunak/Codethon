@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const ADMIN_PASSWORD = "admin@2";
+const ADMIN_PASSWORD = "Anvaya22026";
 const MCQ_DURATION = 30 * 60; // 30 minutes in seconds
 
 const MCQ_QUESTIONS = [
