@@ -55,24 +55,30 @@ const TREASURE_HUNT = {
   ]
 };
 
-import { db } from './firebase';
-import { ref, get, set as setFirebase } from 'firebase/database';
+// Remove Firebase SDK imports because we are using the REST API
+// to avoid the 100 concurrent WebSocket connection limit on the Spark plan.
+const DB_URL = "https://codethon-34ed5-default-rtdb.firebaseio.com";
 
-// ─── STORAGE HELPERS ──────────────────────────────────────────────────────────
-const getTeams = async () => {
-  try { const snapshot = await get(ref(db, "teams")); return snapshot.exists() ? snapshot.val() : {}; } catch { return {}; }
+// ─── STORAGE HELPERS (REST API) ───────────────────────────────────────────────
+const fetchNoCache = async (url) => {
+  const res = await fetch(url, { cache: "no-store" });
+  return await res.json();
 };
-const setTeams = async (t) => { try { await setFirebase(ref(db, "teams"), t); } catch {} };
+
+const getTeams = async () => {
+  try { const data = await fetchNoCache(`${DB_URL}/teams.json?_t=${Date.now()}`); return data || {}; } catch { return {}; }
+};
+const setTeams = async (t) => { try { await fetch(`${DB_URL}/teams.json`, { method: "PUT", body: JSON.stringify(t) }); } catch {} };
 
 const getCurrentRound = async () => {
-  try { const snapshot = await get(ref(db, "current_round")); return snapshot.exists() ? snapshot.val() : "waiting"; } catch { return "waiting"; }
+  try { const data = await fetchNoCache(`${DB_URL}/current_round.json?_t=${Date.now()}`); return data || "waiting"; } catch { return "waiting"; }
 };
-const setCurrentRound = async (round) => { try { await setFirebase(ref(db, "current_round"), round); } catch {} };
+const setCurrentRound = async (round) => { try { await fetch(`${DB_URL}/current_round.json`, { method: "PUT", body: JSON.stringify(round) }); } catch {} };
 
 const getMCQActive = async () => {
-  try { const snapshot = await get(ref(db, "mcq_active")); return snapshot.exists() ? snapshot.val() : { active: false, startTime: null }; } catch { return { active: false, startTime: null }; }
+  try { const data = await fetchNoCache(`${DB_URL}/mcq_active.json?_t=${Date.now()}`); return data || { active: false, startTime: null }; } catch { return { active: false, startTime: null }; }
 };
-const setMCQActive = async (val) => { try { await setFirebase(ref(db, "mcq_active"), val); } catch {} };
+const setMCQActive = async (val) => { try { await fetch(`${DB_URL}/mcq_active.json`, { method: "PUT", body: JSON.stringify(val) }); } catch {} };
 
 // ─── ANTI CHEAT HOOK ──────────────────────────────────────────────────────────
 function useAntiCheat(active, onViolation) {
@@ -104,12 +110,24 @@ function useAntiCheat(active, onViolation) {
     };
     document.addEventListener("keydown", blockKeys);
     
+    const blockCopyPaste = (e) => e.preventDefault();
+    document.addEventListener("copy", blockCopyPaste);
+    document.addEventListener("cut", blockCopyPaste);
+    document.addEventListener("paste", blockCopyPaste);
+    document.addEventListener("dragstart", blockCopyPaste);
+    document.addEventListener("drop", blockCopyPaste);
+    
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       window.removeEventListener("blur", handleBlur);
       document.removeEventListener("contextmenu", blockContextMenu);
       document.removeEventListener("keydown", blockKeys);
+      document.removeEventListener("copy", blockCopyPaste);
+      document.removeEventListener("cut", blockCopyPaste);
+      document.removeEventListener("paste", blockCopyPaste);
+      document.removeEventListener("dragstart", blockCopyPaste);
+      document.removeEventListener("drop", blockCopyPaste);
     };
   }, [active, onViolation]);
 }
@@ -137,7 +155,7 @@ const css = `
     --glow2: 0 0 20px rgba(255,56,100,0.3);
   }
 
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Barlow Condensed', sans-serif; overflow-x: hidden; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Barlow Condensed', sans-serif; overflow-x: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 
   #root { min-height: 100vh; }
 
@@ -178,7 +196,7 @@ const css = `
   .tagline { font-size: 14px; color: var(--text2); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 32px; }
 
   /* ── INPUTS ── */
-  .input { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .input { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 14px; outline: none; transition: border-color 0.2s; user-select: auto; -webkit-user-select: auto; }
   .input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,255,135,0.1); }
   .input::placeholder { color: var(--text2); }
   .label { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text2); margin-bottom: 6px; display: block; }
@@ -281,22 +299,36 @@ const css = `
   .fw-bold { font-weight: 700; }
   .pt-topbar { padding-top: 72px; }
   
+  .mcq-container { display: flex; height: calc(100vh - 104px); }
+  .mcq-sidebar { width: 200px; background: var(--bg2); border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+  .mcq-content { flex: 1; padding: 32px; overflow-y: auto; max-width: 700px; margin: 0 auto; width: 100%; }
+  .mcq-sidebar-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text2); }
+  .mcq-header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  
   @media (max-width: 600px) {
     .options { grid-template-columns: 1fr; }
     .admin-grid { grid-template-columns: 1fr; }
     .card, .card-wide { padding: 20px; }
+    
+    .mcq-header { padding: 12px 16px; gap: 12px; }
+    .mcq-container { flex-direction: column; height: auto; }
+    .mcq-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); padding: 12px 16px; flex-direction: row; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .mcq-sidebar-title { display: none; }
+    .mcq-sidebar button { flex: 0 0 auto; padding: 6px 12px; }
+    .mcq-content { padding: 20px 16px; }
   }
 `;
 
 // ─── COMPONENTS ───────────────────────────────────────────────────────────────
 
-function TopBar({ team, round }) {
+function TopBar({ team, round, memberId, onLogout }) {
   const roundLabels = { waiting: "STANDBY", mcq: "ROUND 1 · MCQ", treasure: "ROUND 2 · TREASURE HUNT", leaderboard: "LEADERBOARD" };
   return (
     <div className="topbar">
       <div className="topbar-logo">Code<span style={{ color: "var(--accent2)" }}>thon</span> 2026</div>
-      {team && <div className="topbar-team mono" style={{ fontSize: 13 }}>{team.name}</div>}
+      {team && <div className="topbar-team mono" style={{ fontSize: 13 }}>{team.name} {memberId && memberId !== "team" ? `(M${memberId})` : ""}</div>}
       {round && <div className="topbar-round">{roundLabels[round] || round.toUpperCase()}</div>}
+      {onLogout && <button className="btn btn-outline btn-sm" style={{ padding: "4px 10px", fontSize: 11, marginLeft: "auto" }} onClick={onLogout}>Logout</button>}
     </div>
   );
 }
@@ -310,7 +342,9 @@ function ViolationAlert({ msg, onDismiss }) {
 function LoginScreen({ onLogin }) {
   const [teamName, setTeamName] = useState("");
   const [password, setPassword] = useState("");
+  const [loginAs, setLoginAs] = useState("team");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState("login"); // login | register | admin
 
@@ -322,18 +356,29 @@ function LoginScreen({ onLogin }) {
     setLoading(true);
     const teams = await getTeams();
     if (teams[id]) { setError("Team Name already taken. Try another."); setLoading(false); return; }
-    const team = { id, name: teamName.trim(), password, mcq_score: 0, mcq_answers: {}, mcq_submitted: false, hunt_level: 1, hunt_score: 0, hunt_penalties: 0, total_score: 0 };
+    const team = { 
+      id, name: teamName.trim(), password, 
+      members: {
+        1: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false },
+        2: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false },
+        3: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false },
+        4: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false }
+      },
+      mcq_score: 0, mcq_answers: {}, mcq_submitted: false, hunt_level: 1, hunt_score: 0, hunt_penalties: 0, total_score: 0 
+    };
     teams[id] = team;
     await setTeams(teams);
-    onLogin(team, "team");
     setLoading(false);
+    setSuccess("Team registered successfully! Please login.");
+    setMode("login");
+    setPassword("");
   };
 
   const login = async () => {
     if (!teamName.trim() || !password.trim()) { setError("All fields required"); return; }
     const id = teamName.trim().toLowerCase();
     if (id === "admin") {
-      if (password === ADMIN_PASSWORD) { onLogin(null, "admin"); }
+      if (password === ADMIN_PASSWORD) { onLogin(null, "admin", null); }
       else { setError("Wrong password"); }
       return;
     }
@@ -342,7 +387,19 @@ function LoginScreen({ onLogin }) {
     const team = teams[id];
     if (!team) { setError("Team not found"); setLoading(false); return; }
     if (team.password !== password) { setError("Wrong password"); setLoading(false); return; }
-    onLogin(team, "team");
+    
+    if (!team.members) {
+      team.members = {
+        1: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false },
+        2: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false },
+        3: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false },
+        4: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false }
+      };
+      teams[id] = team;
+      await setTeams(teams);
+    }
+    
+    onLogin(team, "team", loginAs);
     setLoading(false);
   };
 
@@ -357,7 +414,7 @@ function LoginScreen({ onLogin }) {
 
         <div className="flex gap-2 mb-4" style={{ marginBottom: 20, gap: 8 }}>
           {["login", "register"].map(m => (
-            <button key={m} className={`btn btn-sm ${mode === m ? "btn-primary" : "btn-outline"}`} style={{ flex: 1 }} onClick={() => { setMode(m); setError(""); }}>
+            <button key={m} className={`btn btn-sm ${mode === m ? "btn-primary" : "btn-outline"}`} style={{ flex: 1 }} onClick={() => { setMode(m); setError(""); setSuccess(""); }}>
               {m === "login" ? "Login" : "Register"}
             </button>
           ))}
@@ -368,12 +425,25 @@ function LoginScreen({ onLogin }) {
             <label className="label">Team Name</label>
             <input className="input" placeholder="e.g. The Debug Squad" value={teamName} onChange={e => setTeamName(e.target.value)} />
           </div>
+          {mode === "login" && (
+            <div>
+              <label className="label">Login As</label>
+              <select className="input" value={loginAs} onChange={e => setLoginAs(e.target.value)}>
+                <option value="team">Whole Team (Treasure Hunt)</option>
+                <option value="1">Member 1 (MCQ)</option>
+                <option value="2">Member 2 (MCQ)</option>
+                <option value="3">Member 3 (MCQ)</option>
+                <option value="4">Member 4 (MCQ)</option>
+              </select>
+            </div>
+          )}
           <div>
             <label className="label">Password</label>
             <input className="input mono" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && (mode === "register" ? register() : login())} />
           </div>
 
           {error && <div className="text-danger mono" style={{ fontSize: 13 }}>⚠ {error}</div>}
+          {success && <div className="mono" style={{ fontSize: 13, color: "var(--accent)" }}>✓ {success}</div>}
 
           <button className="btn btn-primary" onClick={mode === "register" ? register : login} disabled={loading}>
             {loading ? "..." : mode === "register" ? "Register & Join" : "Enter Arena"}
@@ -416,10 +486,23 @@ function WaitingRoom({ team }) {
 }
 
 // ─── MCQ ROUND ────────────────────────────────────────────────────────────────
-function MCQRound({ team, onUpdate }) {
+function MCQRound({ team, memberId, onUpdate }) {
+  if (memberId === "team") {
+    return (
+      <div className="screen pt-topbar">
+        <div className="card text-center">
+          <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
+          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Individual Round</div>
+          <div className="text-sm" style={{ marginBottom: 24 }}>The MCQ round is played individually. Please log out and log in as Member 1, 2, 3, or 4.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const memberData = team.members ? team.members[memberId] : { mcq_answers: {}, mcq_submitted: false, mcq_score: 0 };
   const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState(team.mcq_answers || {});
-  const [submitted, setSubmitted] = useState(team.mcq_submitted || false);
+  const [answers, setAnswers] = useState(memberData.mcq_answers || {});
+  const [submitted, setSubmitted] = useState(memberData.mcq_submitted || false);
   const [timeLeft, setTimeLeft] = useState(MCQ_DURATION);
   const [violation, setViolation] = useState("");
   const [violations, setViolations] = useState(0);
@@ -486,10 +569,18 @@ function MCQRound({ team, onUpdate }) {
         MCQ_QUESTIONS.forEach((q, i) => { if (answersRef.current[i] === q.ans) score += 2; });
         const teams = await getTeams();
         if (teams[team.id]) {
-          teams[team.id].mcq_score = score;
-          teams[team.id].mcq_answers = answersRef.current;
-          teams[team.id].mcq_submitted = true;
-          teams[team.id].total_score = score + (teams[team.id].hunt_score || 0);
+          if (!teams[team.id].members) teams[team.id].members = {};
+          if (!teams[team.id].members[memberId]) teams[team.id].members[memberId] = {};
+          teams[team.id].members[memberId].mcq_score = score;
+          teams[team.id].members[memberId].mcq_answers = answersRef.current;
+          teams[team.id].members[memberId].mcq_submitted = true;
+          
+          let teamMcqScore = 0;
+          for (let idx = 1; idx <= 4; idx++) {
+            teamMcqScore += (teams[team.id].members[idx]?.mcq_score || 0);
+          }
+          teams[team.id].mcq_score = teamMcqScore;
+          teams[team.id].total_score = teamMcqScore + (teams[team.id].hunt_score || 0);
           await setTeams(teams);
           onUpdate(teams[team.id]);
         }
@@ -497,7 +588,7 @@ function MCQRound({ team, onUpdate }) {
         if (document.fullscreenElement) document.exitFullscreen();
       })();
     }
-  }, [submitted, team.id, onUpdate]);
+  }, [submitted, team.id, memberId, onUpdate]);
 
   useAntiCheat(!submitted, handleViolation);
 
@@ -506,10 +597,18 @@ function MCQRound({ team, onUpdate }) {
     MCQ_QUESTIONS.forEach((q, i) => { if (answers[i] === q.ans) score += 2; });
     const teams = await getTeams();
     if (teams[team.id]) {
-      teams[team.id].mcq_score = score;
-      teams[team.id].mcq_answers = answers;
-      teams[team.id].mcq_submitted = true;
-      teams[team.id].total_score = score + (teams[team.id].hunt_score || 0);
+      if (!teams[team.id].members) teams[team.id].members = {};
+      if (!teams[team.id].members[memberId]) teams[team.id].members[memberId] = {};
+      teams[team.id].members[memberId].mcq_score = score;
+      teams[team.id].members[memberId].mcq_answers = answers;
+      teams[team.id].members[memberId].mcq_submitted = true;
+      
+      let teamMcqScore = 0;
+      for (let idx = 1; idx <= 4; idx++) {
+        teamMcqScore += (teams[team.id].members[idx]?.mcq_score || 0);
+      }
+      teams[team.id].mcq_score = teamMcqScore;
+      teams[team.id].total_score = teamMcqScore + (teams[team.id].hunt_score || 0);
       await setTeams(teams);
       onUpdate(teams[team.id]);
     }
@@ -553,7 +652,7 @@ function MCQRound({ team, onUpdate }) {
       {violation && <ViolationAlert msg={violation} onDismiss={() => setViolation("")} />}
 
       {/* Header */}
-      <div style={{ background: "var(--bg2)", borderBottom: "1px solid var(--border)", padding: "12px 24px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+      <div className="mcq-header">
         <div className="mono" style={{ color: "var(--accent)", fontSize: 14, flex: 1 }}>{team.name}</div>
         <div className="timer-wrap" style={{ margin: 0 }}>
           <div className={`timer ${isDanger ? "danger" : ""}`}>{mins}:{secs}</div>
@@ -565,10 +664,10 @@ function MCQRound({ team, onUpdate }) {
         <button className="btn btn-danger btn-sm" onClick={() => setShowConfirm(true)}>Submit</button>
       </div>
 
-      <div style={{ display: "flex", height: "calc(100vh - 104px)" }}>
+      <div className="mcq-container">
         {/* Q Sidebar */}
-        <div style={{ width: 200, background: "var(--bg2)", borderRight: "1px solid var(--border)", padding: 16, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
-          <div className="text-sm" style={{ marginBottom: 8, fontWeight: 600 }}>Questions</div>
+        <div className="mcq-sidebar">
+          <div className="mcq-sidebar-title">Questions</div>
           {MCQ_QUESTIONS.map((_, i) => (
             <button key={i} onClick={() => setCurrent(i)} style={{ background: i === current ? "var(--accent)" : answers[i] !== undefined ? "rgba(0,255,135,0.15)" : "var(--bg3)", border: `1px solid ${i === current ? "var(--accent)" : answers[i] !== undefined ? "var(--accent)" : "var(--border)"}`, borderRadius: 4, padding: "8px 12px", cursor: "pointer", color: i === current ? "#000" : answers[i] !== undefined ? "var(--accent)" : "var(--text)", fontFamily: "Space Mono", fontSize: 12, textAlign: "left", transition: "all 0.15s" }}>
               Q{i + 1}
@@ -577,7 +676,7 @@ function MCQRound({ team, onUpdate }) {
         </div>
 
         {/* Question */}
-        <div style={{ flex: 1, padding: "32px", overflowY: "auto", maxWidth: 700, margin: "0 auto" }}>
+        <div className="mcq-content">
           <div className="q-header">Question {current + 1} of {MCQ_QUESTIONS.length}</div>
           <div className="q-text" dangerouslySetInnerHTML={{ __html: q.q.replace(/`([^`]+)`/g, '<code>$1</code>') }} />
           <div className="options">
@@ -818,7 +917,10 @@ function Leaderboard({ team }) {
                     <td><span className="score-pill">{t.hunt_score || 0}</span></td>
                     <td><span className="score-pill" style={{ background: "rgba(0,255,135,0.1)", color: "var(--accent)", fontWeight: 700 }}>{t.total_score || 0}</span></td>
                     <td>
-                      {t.mcq_submitted && <span style={{ fontSize: 11, background: "rgba(0,255,135,0.15)", color: "var(--accent)", padding: "2px 8px", borderRadius: 4 }}>MCQ ✓</span>}
+                      {(() => {
+                        const numSubmitted = t.members ? Object.values(t.members).filter(m => m && m.mcq_submitted).length : (t.mcq_submitted ? 4 : 0);
+                        return numSubmitted > 0 ? <span style={{ fontSize: 11, background: "rgba(0,255,135,0.15)", color: "var(--accent)", padding: "2px 8px", borderRadius: 4 }}>MCQ {numSubmitted}/4 ✓</span> : null;
+                      })()}
                       {t.hunt_level > TREASURE_HUNT.length && <span style={{ fontSize: 11, background: "rgba(255,204,2,0.15)", color: "var(--accent3)", padding: "2px 8px", borderRadius: 4, marginLeft: 4 }}>Hunt ✓</span>}
                     </td>
                   </tr>
@@ -864,7 +966,7 @@ function AdminPanel() {
   };
 
   const teamArr = Object.values(teams).sort((a, b) => (b.total_score || 0) - (a.total_score || 0));
-  const submitted = teamArr.filter(t => t.mcq_submitted).length;
+  const submitted = teamArr.filter(t => (t.members ? Object.values(t.members).filter(m => m && m.mcq_submitted).length === 4 : t.mcq_submitted)).length;
   const huntDone = teamArr.filter(t => t.hunt_level > TREASURE_HUNT.length).length;
 
   const rounds = [
@@ -914,7 +1016,7 @@ function AdminPanel() {
                   <tr key={t.id}>
                     <td className={`mono ${i===0?"rank-1":i===1?"rank-2":i===2?"rank-3":""}`} style={{ fontSize: 16 }}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i + 1}`}</td>
                     <td><div style={{ fontWeight: 700 }}>{t.name}</div><div className="mono" style={{ fontSize: 11, color: "var(--text2)" }}>{t.id}</div></td>
-                    <td><span className="score-pill">{t.mcq_score || 0} {t.mcq_submitted ? "✓" : ""}</span></td>
+                    <td><span className="score-pill">{t.mcq_score || 0} {(t.members ? Object.values(t.members).filter(m => m && m.mcq_submitted).length : (t.mcq_submitted ? 4 : 0))}/4 ✓</span></td>
                     <td className="mono">{t.hunt_level || 1}/{TREASURE_HUNT[t.hunt_branch || "PathA"]?.length || 4} {t.hunt_branch ? `(${t.hunt_branch.replace("Path","")})` : ""}</td>
                     <td className="mono" style={{ color: "var(--accent2)" }}>{t.hunt_penalties || 0}</td>
                     <td className="mono" style={{ color: "var(--accent3)" }}>{t.hunt_wrong_attempts || 0}</td>
@@ -934,7 +1036,7 @@ function AdminPanel() {
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [user, setUser] = useState(null); // { team, role }
+  const [user, setUser] = useState(null); // { team, role, memberId }
   const [round, setRound] = useState("waiting");
   const [teamData, setTeamData] = useState(null);
 
@@ -950,9 +1052,14 @@ export default function App() {
     return () => clearInterval(i);
   }, [user, pollRound]);
 
-  const handleLogin = (team, role) => {
-    setUser({ team, role });
+  const handleLogin = (team, role, memberId) => {
+    setUser({ team, role, memberId });
     setTeamData(team);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setTeamData(null);
   };
 
   const handleTeamUpdate = (updatedTeam) => { setTeamData(updatedTeam); };
@@ -962,13 +1069,26 @@ export default function App() {
   return (
     <>
       <style>{css}</style>
-      {showNav && <TopBar team={teamData} round={round} />}
+      {showNav && <TopBar team={teamData} round={round} memberId={user.memberId} onLogout={handleLogout} />}
       {!user && <LoginScreen onLogin={handleLogin} />}
       {user?.role === "admin" && <AdminPanel />}
       {user?.role === "team" && (() => {
         if (round === "waiting") return <WaitingRoom team={teamData} />;
-        if (round === "mcq") return <MCQRound team={teamData} onUpdate={handleTeamUpdate} />;
-        if (round === "treasure") return <TreasureHunt team={teamData} onUpdate={handleTeamUpdate} />;
+        if (round === "mcq") return <MCQRound team={teamData} memberId={user.memberId} onUpdate={handleTeamUpdate} />;
+        if (round === "treasure") {
+          if (user.memberId !== "team") {
+            return (
+              <div className="screen pt-topbar">
+                <div className="card text-center">
+                  <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Team Round</div>
+                  <div className="text-sm" style={{ marginBottom: 24 }}>The Treasure Hunt is played as a team. Please log out and log in as "Whole Team".</div>
+                </div>
+              </div>
+            );
+          }
+          return <TreasureHunt team={teamData} onUpdate={handleTeamUpdate} />;
+        }
         if (round === "leaderboard") return <Leaderboard team={teamData} />;
         return <WaitingRoom team={teamData} />;
       })()}
