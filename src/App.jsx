@@ -412,7 +412,7 @@ function LandingScreen({ onStart }) {
 function LoginScreen({ onLogin }) {
   const [teamName, setTeamName] = useState("");
   const [password, setPassword] = useState("");
-  const [loginAs, setLoginAs] = useState("team");
+  const [loginAs, setLoginAs] = useState("1");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -508,7 +508,6 @@ function LoginScreen({ onLogin }) {
                 <div className="form-group">
                   <label>Login As</label>
                   <select value={loginAs} onChange={e => setLoginAs(e.target.value)} required>
-                      <option value="team">Whole Team (Treasure Hunt)</option>
                       <option value="1">Member 1 (MCQ)</option>
                       <option value="2">Member 2 (MCQ)</option>
                       <option value="3">Member 3 (MCQ)</option>
@@ -566,17 +565,7 @@ function WaitingRoom({ team }) {
 
 // ─── MCQ ROUND ────────────────────────────────────────────────────────────────
 function MCQRound({ team, memberId, onUpdate }) {
-  if (memberId === "team") {
-    return (
-      <div className="screen pt-topbar">
-        <div className="card text-center">
-          <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
-          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Individual Round</div>
-          <div className="text-sm" style={{ marginBottom: 24 }}>The MCQ round is played individually. Please log out and log in as Member 1, 2, 3, or 4.</div>
-        </div>
-      </div>
-    );
-  }
+
 
   const memberData = team.members ? team.members[memberId] : { mcq_answers: {}, mcq_submitted: false, mcq_score: 0 };
   const [current, setCurrent] = useState(0);
@@ -823,160 +812,7 @@ function MCQRound({ team, memberId, onUpdate }) {
   );
 }
 
-// ─── TREASURE HUNT ────────────────────────────────────────────────────────────
-function TreasureHunt({ team, onUpdate }) {
-  const [level, setLevel] = useState(team.hunt_level || 1);
-  const [branch, setBranch] = useState(team.hunt_branch || null);
-  const [code, setCode] = useState("");
-  const [penalties, setPenalties] = useState(team.hunt_penalties || 0);
-  const [wrongAttempts, setWrongAttempts] = useState(team.hunt_wrong_attempts || 0);
-  const [error, setError] = useState("");
-  const [shaking, setShaking] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [completed, setCompleted] = useState(branch ? level > TREASURE_HUNT[branch].length : false);
-  const [violation, setViolation] = useState("");
 
-  useEffect(() => { setTimeout(() => { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }, 300); }, []);
-
-  const handleViolation = useCallback((v) => {
-    if (v === "fullscreen_exit") { 
-      setViolation("Return to fullscreen!"); 
-      setTimeout(() => document.documentElement.requestFullscreen?.(), 500); 
-    } else {
-      setViolation(`Tab/App switch detected! A penalty has been added.`);
-      (async () => {
-        const teams = await getTeams();
-        if (teams[team.id]) {
-          teams[team.id].hunt_penalties = (teams[team.id].hunt_penalties || 0) + 1;
-          await setTeams(teams);
-          onUpdate(teams[team.id]);
-          setPenalties(teams[team.id].hunt_penalties);
-        }
-      })();
-    }
-  }, [team.id, onUpdate]);
-
-  useAntiCheat(true, handleViolation);
-
-  const submit = async () => {
-    if (!code.trim()) return;
-    const inputCode = code.trim().toUpperCase();
-    
-    let matchedBranch = null;
-    let matchedClue = null;
-    
-    if (level === 1) {
-      for (const [bName, clues] of Object.entries(TREASURE_HUNT)) {
-        const c = clues.find(c => c.level === 1);
-        if (c && c.code === inputCode) {
-          matchedBranch = bName;
-          matchedClue = c;
-          break;
-        }
-      }
-    } else {
-      matchedBranch = branch;
-      matchedClue = TREASURE_HUNT[branch].find(c => c.level === level);
-      if (matchedClue && matchedClue.code !== inputCode) {
-        matchedClue = null;
-      }
-    }
-
-    if (matchedClue) {
-      setSuccess(true);
-      setError("");
-      const nextLevel = level + 1;
-      const branchLength = TREASURE_HUNT[matchedBranch].length;
-      const isComplete = nextLevel > branchLength;
-      const huntScore = isComplete ? Math.max(10, 100 - penalties * 10 - wrongAttempts * 2) : (level * 20);
-      
-      const teams = await getTeams();
-      if (teams[team.id]) {
-        teams[team.id].hunt_branch = matchedBranch;
-        teams[team.id].hunt_level = nextLevel;
-        teams[team.id].hunt_score = huntScore;
-        teams[team.id].hunt_penalties = penalties;
-        teams[team.id].hunt_wrong_attempts = wrongAttempts;
-        teams[team.id].total_score = (teams[team.id].mcq_score || 0) + huntScore;
-        await setTeams(teams);
-        onUpdate(teams[team.id]);
-      }
-      
-      setTimeout(() => {
-        setSuccess(false);
-        setCode("");
-        if (isComplete) { 
-          setCompleted(true); 
-        } else { 
-          setLevel(nextLevel); 
-          if (!branch) setBranch(matchedBranch);
-        }
-      }, 1500);
-    } else {
-      const newWrong = wrongAttempts + 1;
-      setWrongAttempts(newWrong);
-      setShaking(true);
-      setError(`Wrong code! Total wrong attempts: ${newWrong}`);
-      const teams = await getTeams();
-      if (teams[team.id]) { teams[team.id].hunt_wrong_attempts = newWrong; await setTeams(teams); }
-      setTimeout(() => setShaking(false), 500);
-    }
-  };
-
-  if (completed) return (
-    <div className="screen pt-topbar">
-      <div className="card text-center">
-        <div className="complete-badge">
-          <div className="complete-icon">🏆</div>
-          <div style={{ fontSize: 32, fontWeight: 900, color: "var(--accent3)", marginBottom: 8 }}>HUNT COMPLETE!</div>
-          <div className="text-sm" style={{ marginBottom: 24 }}>You've found all the clues on {branch.replace("Path", "Path ")}! Amazing work.</div>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "16px 24px" }}>
-              <div className="mono" style={{ fontSize: 28, color: "var(--accent)", fontWeight: 700 }}>{team.hunt_score || 0}</div>
-              <div className="text-sm">hunt points</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const displayHint = level === 1 
-    ? "🎯 Enter your starting code to discover your assigned path." 
-    : TREASURE_HUNT[branch]?.find(c => c.level === level - 1)?.next_hint || "No hint found.";
-
-  const maxLevels = branch ? TREASURE_HUNT[branch].length : 4;
-  const progressArr = new Array(maxLevels).fill(0);
-
-  return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", paddingTop: 52 }}>
-      {violation && <ViolationAlert msg={violation} onDismiss={() => setViolation("")} />}
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "32px 20px" }}>
-        {/* Progress */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
-          {progressArr.map((_, i) => (
-            <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: i < level - 1 ? "var(--accent)" : i === level - 1 ? "var(--accent3)" : "var(--border)", transition: "background 0.4s" }}></div>
-          ))}
-        </div>
-
-        <div className="hunt-level">
-          <div className="hunt-badge">CLUE {level} / {maxLevels} {branch ? `(${branch.replace("Path", "Path ")})` : ""}</div>
-          {penalties > 0 && <div className="hunt-penalty">-{penalties * 10} marks (tab switches)</div>}
-        </div>
-
-        <div className={`hunt-hint ${success ? "success-flash" : ""}`}>{displayHint}</div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label className="label">{level === 1 ? "Enter your starting code" : "Enter the secret code you found"}</label>
-          <input className={`input code-input ${shaking ? "shake" : ""}`} placeholder="_ _ _ _ _ _ _ _" value={code} onChange={e => setCode(e.target.value.toUpperCase())} onKeyDown={e => e.key === "Enter" && submit()} />
-          {error && <div className="text-danger mono" style={{ fontSize: 13 }}>⚠ {error}</div>}
-          {success && <div style={{ color: "var(--accent)", fontFamily: "Space Mono", fontSize: 13 }}>✓ Correct! Loading next clue...</div>}
-          <button className="btn btn-primary" onClick={submit} disabled={!code.trim() || success}>Unlock Next Clue →</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── LEADERBOARD ──────────────────────────────────────────────────────────────
 function Leaderboard({ team }) {
@@ -1014,7 +850,6 @@ function Leaderboard({ team }) {
                   <th>Rank</th>
                   <th>Team</th>
                   <th>MCQ</th>
-                  <th>Hunt</th>
                   <th>Total</th>
                   <th>Status</th>
                 </tr>
@@ -1028,14 +863,12 @@ function Leaderboard({ team }) {
                       <div className="mono" style={{ fontSize: 11, color: "var(--text2)" }}>{t.id}</div>
                     </td>
                     <td><span className="score-pill">{t.mcq_score || 0}</span></td>
-                    <td><span className="score-pill">{t.hunt_score || 0}</span></td>
                     <td><span className="score-pill" style={{ background: "rgba(0,255,135,0.1)", color: "var(--accent)", fontWeight: 700 }}>{t.total_score || 0}</span></td>
                     <td>
                       {(() => {
                         const numSubmitted = t.members ? Object.values(t.members).filter(m => m && m.mcq_submitted).length : (t.mcq_submitted ? 4 : 0);
                         return numSubmitted > 0 ? <span style={{ fontSize: 11, background: "rgba(0,255,135,0.15)", color: "var(--accent)", padding: "2px 8px", borderRadius: 4 }}>MCQ {numSubmitted}/4 ✓</span> : null;
                       })()}
-                      {t.hunt_level > TREASURE_HUNT.length && <span style={{ fontSize: 11, background: "rgba(255,204,2,0.15)", color: "var(--accent3)", padding: "2px 8px", borderRadius: 4, marginLeft: 4 }}>Hunt ✓</span>}
                     </td>
                   </tr>
                 ))}
@@ -1081,12 +914,10 @@ function AdminPanel() {
 
   const teamArr = Object.values(teams).sort((a, b) => (b.total_score || 0) - (a.total_score || 0));
   const submitted = teamArr.filter(t => (t.members ? Object.values(t.members).filter(m => m && m.mcq_submitted).length === 4 : t.mcq_submitted)).length;
-  const huntDone = teamArr.filter(t => t.hunt_level > TREASURE_HUNT.length).length;
 
   const rounds = [
     { key: "waiting", label: "Waiting Room", desc: "Hold teams in lobby" },
     { key: "mcq", label: "Round 1 — MCQ", desc: "Start 30 min MCQ timer" },
-    { key: "treasure", label: "Round 2 — Treasure Hunt", desc: "Unlock hunt for all teams" },
     { key: "leaderboard", label: "Leaderboard", desc: "Show final scores" },
   ];
 
@@ -1102,7 +933,6 @@ function AdminPanel() {
           <div className="admin-grid">
             <div className="stat-card"><div className="stat-num">{teamArr.length}</div><div className="stat-label">Teams Registered</div></div>
             <div className="stat-card"><div className="stat-num">{submitted}</div><div className="stat-label">MCQ Submitted</div></div>
-            <div className="stat-card"><div className="stat-num">{huntDone}</div><div className="stat-label">Hunt Completed</div></div>
             <div className="stat-card"><div className="stat-num" style={{ color: "var(--accent3)", textTransform: "uppercase", fontSize: 20 }}>{currentRound}</div><div className="stat-label">Current Round</div></div>
           </div>
 
@@ -1123,7 +953,7 @@ function AdminPanel() {
             <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", fontWeight: 700 }}>Live Leaderboard</div>
             <table className="lb-table">
               <thead>
-                <tr><th>Rank</th><th>Team</th><th>MCQ</th><th>Hunt Lvl</th><th>Tab Penalties</th><th>Wrong Codes</th><th>Total</th></tr>
+                <tr><th>Rank</th><th>Team</th><th>MCQ</th><th>Total</th></tr>
               </thead>
               <tbody>
                 {teamArr.map((t, i) => (
@@ -1131,9 +961,6 @@ function AdminPanel() {
                     <td className={`mono ${i===0?"rank-1":i===1?"rank-2":i===2?"rank-3":""}`} style={{ fontSize: 16 }}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i + 1}`}</td>
                     <td><div style={{ fontWeight: 700 }}>{t.name}</div><div className="mono" style={{ fontSize: 11, color: "var(--text2)" }}>{t.id}</div></td>
                     <td><span className="score-pill">{t.mcq_score || 0} {(t.members ? Object.values(t.members).filter(m => m && m.mcq_submitted).length : (t.mcq_submitted ? 4 : 0))}/4 ✓</span></td>
-                    <td className="mono">{t.hunt_level || 1}/{TREASURE_HUNT[t.hunt_branch || "PathA"]?.length || 4} {t.hunt_branch ? `(${t.hunt_branch.replace("Path","")})` : ""}</td>
-                    <td className="mono" style={{ color: "var(--accent2)" }}>{t.hunt_penalties || 0}</td>
-                    <td className="mono" style={{ color: "var(--accent3)" }}>{t.hunt_wrong_attempts || 0}</td>
                     <td><span className="score-pill" style={{ color: "var(--accent)", fontWeight: 700 }}>{t.total_score || 0}</span></td>
                   </tr>
                 ))}
@@ -1193,20 +1020,7 @@ export default function App() {
       {user?.role === "team" && (() => {
         if (round === "waiting") return <WaitingRoom team={teamData} />;
         if (round === "mcq") return <MCQRound team={teamData} memberId={user.memberId} onUpdate={handleTeamUpdate} />;
-        if (round === "treasure") {
-          if (user.memberId !== "team") {
-            return (
-              <div className="screen pt-topbar">
-                <div className="card text-center">
-                  <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Team Round</div>
-                  <div className="text-sm" style={{ marginBottom: 24 }}>The Treasure Hunt is played as a team. Please log out and log in as "Whole Team".</div>
-                </div>
-              </div>
-            );
-          }
-          return <TreasureHunt team={teamData} onUpdate={handleTeamUpdate} />;
-        }
+
         if (round === "leaderboard") return <Leaderboard team={teamData} />;
         return <WaitingRoom team={teamData} />;
       })()}
