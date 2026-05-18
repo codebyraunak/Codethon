@@ -28,32 +28,7 @@ const MCQ_QUESTIONS = [
   { id: 20, q: "What is `0b1010` in decimal?", options: ["8", "10", "12", "2"], ans: 1 },
 ];
 
-const TREASURE_HUNT = {
-  PathA: [
-    { level: 1, code: "START-A", next_hint: "Path A Clue 2: Head to the lab." },
-    { level: 2, code: "LAB-A", next_hint: "Path A Clue 3: Go to the canteen." },
-    { level: 3, code: "CANT-A", next_hint: "Path A Clue 4: Return to the main hall." },
-    { level: 4, code: "WIN-A", next_hint: "COMPLETE" }
-  ],
-  PathB: [
-    { level: 1, code: "START-B", next_hint: "Path B Clue 2: Head to the library." },
-    { level: 2, code: "LIB-B", next_hint: "Path B Clue 3: Go to the sports room." },
-    { level: 3, code: "SPORT-B", next_hint: "Path B Clue 4: Return to the main hall." },
-    { level: 4, code: "WIN-B", next_hint: "COMPLETE" }
-  ],
-  PathC: [
-    { level: 1, code: "START-C", next_hint: "Path C Clue 2: Head to the parking." },
-    { level: 2, code: "PARK-C", next_hint: "Path C Clue 3: Go to the admin block." },
-    { level: 3, code: "ADMIN-C", next_hint: "Path C Clue 4: Return to the main hall." },
-    { level: 4, code: "WIN-C", next_hint: "COMPLETE" }
-  ],
-  PathD: [
-    { level: 1, code: "START-D", next_hint: "Path D Clue 2: Head to the auditorium." },
-    { level: 2, code: "AUDI-D", next_hint: "Path D Clue 3: Go to the garden." },
-    { level: 3, code: "GARD-D", next_hint: "Path D Clue 4: Return to the main hall." },
-    { level: 4, code: "WIN-D", next_hint: "COMPLETE" }
-  ]
-};
+
 
 // Remove Firebase SDK imports because we are using the REST API
 // to avoid the 100 concurrent WebSocket connection limit on the Spark plan.
