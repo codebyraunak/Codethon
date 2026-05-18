@@ -6,26 +6,204 @@ const ADMIN_PASSWORD = "Anvaya@2026";
 const MCQ_DURATION = 30 * 60; // 30 minutes in seconds
 
 const MCQ_QUESTIONS = [
-  { id: 1, q: "What does `len('hello')` return?", options: ["4", "5", "6", "Error"], ans: 1 },
-  { id: 2, q: "Which data structure follows LIFO?", options: ["Queue", "Array", "Stack", "Tree"], ans: 2 },
-  { id: 3, q: "Output of `2 ** 3` in Python?", options: ["6", "8", "9", "Error"], ans: 1 },
-  { id: 4, q: "What symbol is used for single-line comment in Python?", options: ["//", "/*", "#", "--"], ans: 2 },
-  { id: 5, q: "Which of these is a mutable data type?", options: ["String", "Tuple", "List", "Integer"], ans: 2 },
-  { id: 6, q: "Time complexity of binary search?", options: ["O(n)", "O(n²)", "O(log n)", "O(1)"], ans: 2 },
-  { id: 7, q: "What does `range(1, 6)` produce?", options: ["1 to 5", "1 to 6", "0 to 5", "0 to 6"], ans: 0 },
-  { id: 8, q: "What keyword is used to define a function in Python?", options: ["func", "def", "function", "define"], ans: 1 },
-  { id: 9, q: "What is the output of `print(10 % 3)`?", options: ["3", "1", "0", "Error"], ans: 1 },
-  { id: 10, q: "Which HTML tag is used for the largest heading?", options: ["<h6>", "<head>", "<h1>", "<header>"], ans: 2 },
-  { id: 11, q: "What does CPU stand for?", options: ["Central Process Unit", "Central Processing Unit", "Computer Processing Unit", "Core Processing Unit"], ans: 1 },
-  { id: 12, q: "What is `type([])` in Python?", options: ["<class 'tuple'>", "<class 'dict'>", "<class 'list'>", "<class 'array'>"], ans: 2 },
-  { id: 13, q: "Which loop runs at least once always?", options: ["for", "while", "do-while", "foreach"], ans: 2 },
-  { id: 14, q: "Output of `bool(0)` in Python?", options: ["True", "False", "0", "None"], ans: 1 },
-  { id: 15, q: "What does `//` do in Python?", options: ["Comment", "Division", "Floor division", "Modulo"], ans: 2 },
-  { id: 16, q: "Riya writes `for i in range(1,6): print(i)`. How many lines printed?", options: ["4", "5", "6", "Error"], ans: 1 },
-  { id: 17, q: "Karan does `['a','b','c','d'][-1]`. What does he get?", options: ["'a'", "'c'", "'d'", "Error"], ans: 2 },
-  { id: 18, q: "Dev's if checks `x > 0`, he inputs `-5`. Which block runs?", options: ["if block", "elif block", "else block", "No block"], ans: 2 },
-  { id: 19, q: "Which operator checks equality in Python?", options: ["=", "==", "===", "!="], ans: 1 },
-  { id: 20, q: "What is `0b1010` in decimal?", options: ["8", "10", "12", "2"], ans: 1 },
+  {
+    id: 1,
+    q: "1)Adya writes a function that is supposed to print a right angled star triangle of n rows. She tests it with n=4 but the output surprises her.\nCode:\ndef star_triangle(n):\n    for i in range(n):\n        print(\"*\" * i)\n\nstar_triangle(4)\n\nWhat is actually printed?",
+    options: ["(blank line), *, **, ***", "*, **, ***, ****", "****, ***, **, *", "*, **, ***"],
+    ans: 0
+  },
+  {
+    id: 2,
+    q: "2) Which of the following will NOT raise an error?\nt = ([1, 2], [3, 4])",
+    options: ["t[0] = [9, 8]", "t[0].append(99)", "t[1] = []", "t = ()"],
+    ans: 1
+  },
+  {
+    id: 3,
+    q: "3) What is the output?\nd = {'a': 1, 'b': 2, 'a': 3}\nprint(len(d), d['a'])",
+    options: ["3 1", "2 3", "2 1", "3 3"],
+    ans: 1
+  },
+  {
+    id: 4,
+    q: "4) What does this print?\nd = {'x': 10}\nprint(d.get('y', 0) + d.get('x', 0))",
+    options: ["10", "0", "Error", "None"],
+    ans: 0
+  },
+  {
+    id: 5,
+    q: "5) What is the output?\nt = (1,)\nprint(type(t), type((1)))",
+    options: ["<class 'tuple'> <class 'tuple'>", "<class 'tuple'> <class 'int'>", "<class 'int'> <class 'tuple'>", "<class 'int'> <class 'int'>"],
+    ans: 1
+  },
+  {
+    id: 6,
+    q: "6. Online Shopping Fraud Detection\ntransactions = [5000, 12000, 3000, 25000]\ncount = 0\n\nfor amount in transactions:\n   if amount > 10000:\n       count += 1\n\nprint(count)\nOutput?",
+    options: ["1", "2", "3", "4"],
+    ans: 1
+  },
+  {
+    id: 7,
+    q: "7. College Fest Entry \nDuring a college fest, the organizing team maintains a blacklist of students who are not allowed to enter the event venue.\nThe system checks each student one by one and prints only the names of students who are not present in the blacklist.\nstudents = [\"A\", \"B\", \"C\"]\nblacklist = [\"C\"]\n\nfor s in students:\n   if s not in blacklist:\n       print(s)\nWhat will be the output?",
+    options: ["A\nB\nC", "A\nB", "C", "Error"],
+    ans: 1
+  },
+  {
+    id: 8,
+    q: "8. Code:- \nnumbers = [2, 5, 8, 11, 14]\n\nfor n in numbers:\n   if n % 2 == 0:\n       print(n)\nWhat will be the output?",
+    options: ["2\n5\n8\n11\n14", "5\n11", "2\n8\n14", "Error"],
+    ans: 2
+  },
+  {
+    id: 9,
+    q: "9. values = [True, False, True, True]\ncount = 0\nfor v in values:\n   count += v\nprint(count)\nWhat will be the output?",
+    options: ["True", "4", "3", "Error"],
+    ans: 2
+  },
+  {
+    id: 10,
+    q: "10. Nested Condition\nx = 7\nif x > 5:\n   if x < 10:\n       print(\"Inside\")\nelse:\n   print(\"Outside\")\nWhat will be the output?",
+    options: ["Inside", "Outside", "Inside\nOutside", "No Output"],
+    ans: 0
+  },
+  {
+    id: 11,
+    q: "1 . In the workshop, every shelf label has a tool name, an id number, and a count. A helper walks through the shelves and writes entries in a notebook. Sometimes he reaches the same shelf later after recounting it, so the count should become the later count. But the printed shelf label is old and must remain the first name written for that id. The final report must also keep the order in which ids first appeared in the notebook. Two shelves can have similar names, so the id is the trusted clue. The array a already holds n accepted records before the new notebook line is processed. A C program stores final records in an array of structures.\nWhich code fragment correctly handles one new notebook entry name, id, count?",
+    options: [
+      "pos = -1;\nfor(i = 0; i < n; i++)\n    if(a[i].id == id) pos = i;\nif(pos == -1) {\n    a[n].id = id;\n    strcpy(a[n].name, name);\n    a[n].count = count;\n    n++;\n} else {\n    a[pos].count = count;\n}",
+      "pos = -1;\nfor(i = 0; i <= n; i++)\n    if(a[i].id = id) pos = i;\nif(pos == -1) {\n    a[n].id == id;\n    strcpy(a[n].name, name);\n    a[n].count = count;\n    n++;\n} else {\n    strcpy(a[pos].name, name);\n    a[pos].count = count;\n}",
+      "pos = 0;\nfor(i = 0; i < n; i++)\n    if(a[i].id == id) pos = i;\nif(pos == 0) {\n    a[n].id = id;\n    strcpy(a[n].name, name);\n    a[n].count = count;\n    n++;\n} else {\n    a[pos].count = count;\n}",
+      "pos = -1;\nfor(i = 0; i < n; i++)\n    if(strcmp(a[i].name, name) == 0) pos = i;\nif(pos == -1) {\n    a[n].id = id;\n    strcpy(a[n].name, name);\n    a[n].count = count;\n    n++;\n} else {\n    a[pos].id = id;\n    a[pos].count = count;\n}"
+    ],
+    ans: 0
+  },
+  {
+    id: 12,
+    q: "2. A library shelf carries subject letters on book spines. The librarian uses a strange fairness rule: after checking a shelf, every subject still present must have the same number of books. If the shelf already satisfies that, it should be reported as already fair. If not, the assistant may remove one book from exactly one subject pile, but not two books and not one whole subject unless that subject had only one book. The assistant is warned that the length of the shelf word alone is a trap; \"AABBCCCD\" and \"AABBCCC\" feel close but behave differently. Also, the removed book is only imagined for the report, so the original shelf string should not be permanently damaged during trial checks. Which Python dictionary approaches can correctly decide the report? Choose all correct answers.",
+    options: [
+      "Count each letter, then for each letter temporarily reduce its count by one and test whether all non-zero counts match.",
+      "Count each letter, then count how many letters have each frequency and reason from those frequency counts.",
+      "Sort the string and check whether the first half of the string equals the second half.",
+      "Find the largest count and reduce all letters with that count by one before testing fairness."
+    ],
+    ans: [0, 1]
+  },
+  {
+    id: 13,
+    q: "3 . Amara volunteers at a small community library where every borrowed book title is written into a digital register. The librarian follows an unusual habit: whenever a reader returns a book, the same title is written again into the register instead of being removed. Over time, the register becomes filled with repeated titles.\nOne evening, the librarian asks Amara two questions:\n·     “How many different book titles do we actually have in this register?”\n·     “Which book seems to be the most popular because it appears the most times?”\nAmara only knows beginner-level Python. She may use lists, loops, dictionaries, and built-in functions, but she is not allowed to import any library.\nA friend gives her advice about which Python data structures and logic she should use.\nWhich friend gives the MOST correct explanation?",
+    options: [
+      "“First convert the register into a tuple because tuples automatically remove repeated titles.\nThen create another list to store counts manually.\nFinally, sort the list alphabetically to discover the most popular book.”",
+      "“Convert the register into a set because a set keeps only unique titles automatically.\nThe size of that set tells you how many different books exist.\nThen go through the original register one title at a time and store counts in a dictionary, where each title is connected to its number of appearances.\nAfter counting everything, find the title with the highest count.”",
+      "“Use only a list for both tasks because lists ignore repeated entries when checking length.\nThen use nested loops to repeatedly delete duplicates until the most popular title remains.”",
+      "“Convert the register into a set and use positions like first, second, and third items to compare titles directly.\nThen use the smallest frequency value in a dictionary to determine the most popular book.”"
+    ],
+    ans: 1
+  },
+  {
+    id: 14,
+    q: "4. Nina is a junior developer helping a local hardware shop digitize its inventory system.\nEach tool in the shop must store:\n·     the tool’s name\n·     the available quantity\nShe creates a structure called Item, stores three tools in an array, writes a function to update the quantity of one tool using pointers, and another function to print the inventory.\nDuring code review, four trainees submit different snippets for the quantity update function.\nOnly ONE correctly updates the original structure stored in memory.\nWhich snippet correctly matches Nina’s intended logic?",
+    options: [
+      "void update_quantity(struct Item item, int q) {\n    item.quantity = q;\n}",
+      "void update_quantity(struct Item *item, int q) {\n    item->quantity = q;\n}",
+      "void update_quantity(struct Item *item, int q) {\n    *item.quantity = q;\n}",
+      "void update_quantity(struct Item item[], int q) {\n    item.quantity = q;\n}"
+    ],
+    ans: 1
+  },
+  {
+    id: 15,
+    q: "5. Sana is building a voter eligibility checker. A person is eligible if they are 18 or older and  a citizen. She also wants to flag people who are citizens under 18 as future voters. Identify all code fragments that correctly implement this logic.\n\n# Fragment A\ndef check(age, citizen):\n    if age >= 18 and citizen:\n        return \"Eligible\"\n    elif citizen and age < 18:\n        return \"Future voter\"\n    else:\n        return \"Not eligible\"\n\n# Fragment B\ndef check(age, citizen):\n    if age >= 18:\n        if citizen:\n            return \"Eligible\"\n    if citizen:\n        return \"Future voter\"\n    return \"Not eligible\"\n\n# Fragment C\ndef check(age, citizen):\n    if age >= 18 and citizen == True:\n        return \"Eligible\"\n    if citizen == True and age < 18:\n        return \"Future voter\"\n    else:\n        return \"Not eligible”\n\nWhich fragments correctly handle all three cases?\nSelect all that apply, then click Check.",
+    options: [
+      "Fragment A only",
+      "Fragment B only",
+      "Fragment A and Fragment C",
+      "All three fragments"
+    ],
+    ans: [2]
+  },
+  {
+    id: 16,
+    q: "6. Rajath, a first-year CS student, is desperately trying to automate his RC Circuit experiment using Python before his lab test tomorrow. He recalls from his Physics class that a capacitor stores electrical charge, and the relationship between capacitance, charge, and voltage is defined by:\n\nC = Q / V\n\nWhere:\nC = Capacitance (measured in Farads, F)\nQ = Electric charge stored on the capacitor plates (measured in Coulombs, C)\nV = Potential difference across the capacitor terminals (measured in Volts, V)\n\nRajath decides to write a modular Python program where each physical quantity is computed by a separate function, following the principle of separation of concerns. He begins by defining a function stub with a descriptive signature that clearly conveys the order and role of each parameter to anyone reading the code.\npythondef calculate_capacitance(charge, voltage):\n    pass  # To be implemented\nHe knows that in Python, parameter order in a function signature matters when the function is invoked using positional arguments. A mismatch between the intended semantics of the parameter and its position can cause silent logical errors — bugs that don't raise exceptions but return incorrect results.\nWhich of the following implementations is semantically correct, consistent with the function signature, and will return the accurate capacitance value?",
+    options: [
+      "def calculate_capacitance(voltage, charge):\n    capacitance = charge / voltage\n    return capacitance",
+      "def calculate_capacitance(charge, voltage):\n    capacitance = charge / voltage\n    return capacitance",
+      "def calculate_capacitance(v, q):\n    capacitance = v / q\n    return capacitance",
+      "def calculate_capacitance(q, v):\n    capacitance = v / q\n    return capacitance"
+    ],
+    ans: 1
+  },
+  {
+    id: 17,
+    q: "7. During the Anvaya finals, only participants with valid wristbands are allowed into the auditorium.\nA volunteer writes the following code:\nCode:-\nwristband = True\nif wristband:\n   print(\"Entry Allowed\")\n   print(\"Seat Assigned\")\nelse:\n   print(\"Entry Denied\")\n\nprint(\"Next Participant\")\nIf wristband = False, which output will be produced?",
+    options: [
+      "Entry Denied",
+      "Entry Denied\nNext Participant",
+      "Entry Allowed\nSeat Assigned",
+      "Seat Assigned\nNext Participant"
+    ],
+    ans: 1
+  },
+  {
+    id: 18,
+    q: "4. Certificate Eligibility Filter \nThe event platform issues certificates only if:\n● attendance > 75\n● quiz_completed is True\n● feedback_submitted is True\nA student writes:\nif attendance > 75 and quiz_completed or feedback_submitted:\nUnexpectedly, some students who skipped the quiz still receive certificates.\nWhich statement best explains the issue?",
+    options: [
+      "Boolean variables cannot be combined in conditions",
+      "'or' evaluates independently when previous 'and' conditions fail",
+      "Conditional statements require only one Boolean expression",
+      "Python ignores Boolean precedence inside 'if' blocks"
+    ],
+    ans: 1
+  },
+  {
+    id: 19,
+    q: "5. Audience Poll Analyzer \nAn event poll stores votes as:\nvotes = [\"AI\", \"Web\", \"AI\", \"Cyber\", \"AI\"]\nA participant writes:\ncount = 0\n\nfor i in votes:\n   if i == \"AI\":\n       count = 1\nThe expected output is 3, but the program outputs only 1.\nWhich option best identifies the issue?",
+    options: [
+      "The counter variable is overwritten instead of accumulated",
+      "Loop variables cannot compare string values",
+      "Lists do not support repeated elements",
+      "Assignment inside loops terminates iteration"
+    ],
+    ans: 0
+  },
+  {
+    id: 20,
+    q: "7. Dynamic Elimination Logic \nParticipants qualify only if:\n● coding > 70\n● debugging > 60\nA student writes:\nif coding > 70:\n   if debugging > 60:\n       print(\"Qualified\")\nelse:\n   print(\"Rejected\")\nSome participants receive no output at all.\nWhich option best explains this behavior?",
+    options: [
+      "The 'else' block is associated only with the outer condition",
+      "Nested conditions cannot contain print statements",
+      "Python skips nested blocks after the first comparison",
+      "Comparison operators inside nested blocks execute independently"
+    ],
+    ans: 0
+  },
+  {
+    id: 21,
+    q: "8. AI-Based Attendance Counter \nAttendance data is stored as:\nattendance = [True, True, False, True]\nA student writes:\npresent = 0\n\nfor i in attendance:\n   present += i\nThe output correctly becomes 3.\nWhy does this work?",
+    options: [
+      "Boolean values participate numerically during arithmetic operations",
+      "Lists automatically convert Boolean values into strings",
+      "'+=' ignores False values completely",
+      "Loop variables cannot store Boolean values"
+    ],
+    ans: 0
+  },
+  {
+    id: 22,
+    q: "9. Before the coding round begins, a countdown system runs:\ntime = 3\nwhile time > 0:\n   print(time)\n   time -= 1\nHow many times will the loop execute?",
+    options: ["2", "3", "4", "Infinite times"],
+    ans: 1
+  },
+  {
+    id: 23,
+    q: "10. Smart Water Dispenser \nAn automatic water dispenser works only if BOTH:\n● tank has water\n● power supply is ON\nA participant writes:\ntank = True\npower = False\n\nif tank or power:\n   print(\"Dispense Water\")\nThe dispenser runs even when power is OFF.\nWhat is the logical issue?",
+    options: [
+      "'or' allows execution if at least one condition is True",
+      "Boolean variables cannot be combined",
+      "Python ignores False values in conditions",
+      "'or' works only for numeric comparisons"
+    ],
+    ans: 0
+  }
 ];
 
 
@@ -634,7 +812,14 @@ function MCQRound({ team, memberId, onUpdate }) {
       setViolation(`Tab switch detected! Your test has been automatically submitted.`);
       (async () => {
         let score = 0;
-        MCQ_QUESTIONS.forEach((q, i) => { if (answersRef.current[i] === q.ans) score += 2; });
+        MCQ_QUESTIONS.forEach((q, i) => { 
+          const ans = answersRef.current[i];
+          if (Array.isArray(q.ans)) {
+            if (Array.isArray(ans) && JSON.stringify([...ans].sort()) === JSON.stringify([...q.ans].sort())) score += 2;
+          } else {
+            if (ans === q.ans) score += 2; 
+          }
+        });
         const teams = await getTeams();
         if (teams[team.id]) {
           if (!teams[team.id].members) teams[team.id].members = {};
@@ -662,7 +847,14 @@ function MCQRound({ team, memberId, onUpdate }) {
 
   const handleSubmit = async () => {
     let score = 0;
-    MCQ_QUESTIONS.forEach((q, i) => { if (answers[i] === q.ans) score += 2; });
+    MCQ_QUESTIONS.forEach((q, i) => { 
+      const ans = answers[i];
+      if (Array.isArray(q.ans)) {
+        if (Array.isArray(ans) && JSON.stringify([...ans].sort()) === JSON.stringify([...q.ans].sort())) score += 2;
+      } else {
+        if (ans === q.ans) score += 2;
+      }
+    });
     const teams = await getTeams();
     if (teams[team.id]) {
       if (!teams[team.id].members) teams[team.id].members = {};
@@ -698,7 +890,17 @@ function MCQRound({ team, memberId, onUpdate }) {
         <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
           <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "20px", flex: 1 }}>
             <div className="mono" style={{ fontSize: 40, color: "var(--accent)", fontWeight: 700 }}>
-              {Object.values(answers).filter((a, i) => a === MCQ_QUESTIONS[i]?.ans).length * 2}
+              {Object.keys(answers).filter(key => {
+                const i = parseInt(key);
+                const q = MCQ_QUESTIONS[i];
+                if (!q) return false;
+                const a = answers[i];
+                if (Array.isArray(q.ans)) {
+                  return Array.isArray(a) && JSON.stringify([...a].sort()) === JSON.stringify([...q.ans].sort());
+                } else {
+                  return a === q.ans;
+                }
+              }).length * 2}
             </div>
             <div className="text-sm">points scored</div>
           </div>
@@ -781,11 +983,26 @@ function MCQRound({ team, memberId, onUpdate }) {
                   <h2 className="question-text" id="questionText" dangerouslySetInnerHTML={{ __html: q.q.replace(/`([^`]+)`/g, '<code>$1</code>') }} />
 
                   <div className="answer-area" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {q.options.map((opt, i) => (
-                      <button key={i} className={`btn ${answers[current] === i ? "btn-primary" : "btn-outline"}`} style={{ textAlign: 'left', padding: '1rem', height: 'auto', whiteSpace: 'normal', borderRadius: 'var(--radius-sm)', justifyContent: 'flex-start' }} onClick={() => setAnswers(prev => ({ ...prev, [current]: i }))}>
-                        <span style={{ color: answers[current] === i ? "rgba(255,255,255,0.7)" : "var(--text-muted)", marginRight: 8 }}>{String.fromCharCode(65 + i)}.</span> {opt}
-                      </button>
-                    ))}
+                    {q.options.map((opt, i) => {
+                      const isMulti = Array.isArray(q.ans);
+                      const isSelected = isMulti 
+                        ? (Array.isArray(answers[current]) && answers[current].includes(i))
+                        : (answers[current] === i);
+                      return (
+                        <button key={i} className={`btn ${isSelected ? "btn-primary" : "btn-outline"}`} style={{ textAlign: 'left', padding: '1rem', height: 'auto', whiteSpace: 'pre-wrap', borderRadius: 'var(--radius-sm)', justifyContent: 'flex-start' }} onClick={() => setAnswers(prev => {
+                            if (isMulti) {
+                                let currArr = Array.isArray(prev[current]) ? [...prev[current]] : [];
+                                if (currArr.includes(i)) currArr = currArr.filter(x => x !== i);
+                                else currArr.push(i);
+                                return { ...prev, [current]: currArr };
+                            } else {
+                                return { ...prev, [current]: i };
+                            }
+                        })}>
+                          <span style={{ color: isSelected ? "rgba(255,255,255,0.7)" : "var(--text-muted)", marginRight: 8 }}>{String.fromCharCode(65 + i)}.</span> {opt}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <div className="test-controls">
