@@ -173,10 +173,6 @@ const MCQ_QUESTIONS = [
   },
 ];
 
-
-
-];
-
 const RIDDLES = [
   "I stand among a crowd yet I alone set the sky on fire every season. Machines sleep in rows beside me, indifferent to my blaze. People eat and laugh not far from where I root, yet they rarely look up. A night of music once shook the earth near my feet, and still I flowered on in silence.",
   "I am neither wall nor door, yet I guard the face of a building every day. Circles come and go beside me, but I have never moved an inch. I wear a crown no jeweller crafted — flame-coloured, wild, and seasonal. Voices once sang beneath my canopy, and the stars above me did not flinch.",
