@@ -42,7 +42,7 @@
     box-sizing: border-box;
 }
 
-.apple-theme-html {
+html {
     scroll-behavior: smooth;
 }
 
@@ -132,7 +132,8 @@
 }
 
 /* --- Landing Sections --- */
-.landing-.apple-theme {
+.landing-body {
+    height: 100vh;
     overflow-y: auto;
 }
 
@@ -616,7 +617,7 @@
    TEST PAGE
    ============================================= */
 
-.test-.apple-theme {
+.test-body {
     background: var(--bg-deep);
     background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('/images/testbackground.jpg');
     background-size: cover;
