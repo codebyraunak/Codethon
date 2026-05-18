@@ -875,12 +875,22 @@ function MCQRound({ team, memberId, onUpdate }) {
   const pct = (timeLeft / MCQ_DURATION) * 100;
   const isDanger = timeLeft < 300;
 
+  const assignedIndex = team.riddle_index !== undefined ? team.riddle_index : (team.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % RIDDLES.length);
+  const riddle = RIDDLES[assignedIndex];
+
   if (submitted) return (
     <div className="screen pt-topbar">
-      <div className="card text-center">
+      <div className="card text-center" style={{ maxWidth: 800 }}>
         <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
         <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>MCQ Submitted!</div>
-        <div className="text-sm" style={{ marginBottom: 24 }}>Your answers have been recorded. Wait for Round 2.</div>
+        <div className="text-sm" style={{ marginBottom: 24 }}>Your answers have been recorded. Here is your clue for the Treasure Hunt:</div>
+        
+        <div style={{ background: "var(--bg3)", borderRadius: 12, padding: "24px", border: "1px solid var(--border)", textAlign: "left", marginBottom: 24 }}>
+          <div className="text-accent" style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>Your Team's Clue</div>
+          <div style={{ fontSize: 18, lineHeight: 1.6, fontStyle: "italic", whiteSpace: "pre-wrap" }}>
+            "{riddle}"
+          </div>
+        </div>
         
         <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 12 }}>
           <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "20px", flex: 1 }}>
@@ -1105,29 +1115,6 @@ function Leaderboard({ team }) {
   );
 }
 
-// ─── TREASURE HUNT ROUND ───────────────────────────────────────────────────────
-function TreasureHunt({ team }) {
-  const assignedIndex = team.riddle_index !== undefined ? team.riddle_index : (team.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % RIDDLES.length);
-  const riddle = RIDDLES[assignedIndex];
-  
-  return (
-    <div className="screen pt-topbar">
-      <div className="card text-center" style={{ maxWidth: 800, margin: "0 auto" }}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>🗺️</div>
-        <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>Round 2: Treasure Hunt</div>
-        <div className="text-sm" style={{ marginBottom: 24 }}>Find the location described in your team's unique riddle. All 4 members must go there.</div>
-        
-        <div style={{ background: "var(--bg3)", borderRadius: 12, padding: "32px", border: "1px solid var(--border)", textAlign: "left" }}>
-          <div className="text-accent" style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>Your Team's Clue</div>
-          <div style={{ fontSize: 20, lineHeight: 1.6, fontStyle: "italic", whiteSpace: "pre-wrap" }}>
-            "{riddle}"
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── ADMIN PANEL ──────────────────────────────────────────────────────────────
 function AdminPanel() {
   const [teams, setTeamsData] = useState({});
@@ -1175,7 +1162,6 @@ function AdminPanel() {
   const rounds = [
     { key: "waiting", label: "Waiting Room", desc: "Hold teams in lobby" },
     { key: "mcq", label: "Round 1 — MCQ", desc: "Start 30 min MCQ timer" },
-    { key: "treasure", label: "Round 2 — Treasure Hunt", desc: "Show team riddles" },
     { key: "leaderboard", label: "Leaderboard", desc: "Show final scores" },
   ];
 
@@ -1299,7 +1285,6 @@ export default function App() {
       {user?.role === "team" && (() => {
         if (round === "waiting") return <WaitingRoom team={teamData} />;
         if (round === "mcq") return <MCQRound team={teamData} memberId={user.memberId} onUpdate={handleTeamUpdate} />;
-        if (round === "treasure") return <TreasureHunt team={teamData} />;
         if (round === "leaderboard") return <Leaderboard team={teamData} />;
         return <WaitingRoom team={teamData} />;
       })()}
