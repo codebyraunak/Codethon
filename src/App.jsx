@@ -605,14 +605,26 @@ function LoginScreen({ onLogin }) {
     
     if (!team.members) {
       team.members = {
-        1: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false },
-        2: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false },
-        3: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false },
-        4: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false }
+        1: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false, logged_in: false },
+        2: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false, logged_in: false },
+        3: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false, logged_in: false },
+        4: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false, logged_in: false }
       };
       teams[id] = team;
       await setTeams(teams);
     }
+
+    if (team.members[loginAs]?.logged_in) {
+      setError(`Member ${loginAs} is already logged in on another device.`);
+      setLoading(false);
+      return;
+    }
+    
+    team.members[loginAs].logged_in = true;
+    teams[id] = team;
+    await setTeams(teams);
+    
+    if (loginAs) localStorage.setItem("codethon_user", JSON.stringify({ team, role: "team", memberId: loginAs }));
     
     onLogin(team, "team", loginAs);
     setLoading(false);
@@ -1107,6 +1119,16 @@ function AdminPanel() {
     refresh();
   };
 
+  const unlockTeam = async (teamId) => {
+    if (!confirm(`Unlock all members of team ${teamId} so they can log in again?`)) return;
+    const t = await getTeams();
+    if (t[teamId] && t[teamId].members) {
+      Object.values(t[teamId].members).forEach(m => { if (m) m.logged_in = false; });
+      await setTeams(t);
+      refresh();
+    }
+  };
+
   const teamArr = Object.values(teams).sort((a, b) => (b.total_score || 0) - (a.total_score || 0));
   const submitted = teamArr.filter(t => (t.members ? Object.values(t.members).filter(m => m && m.mcq_submitted).length === 4 : t.mcq_submitted)).length;
 
@@ -1154,8 +1176,21 @@ function AdminPanel() {
                 {teamArr.map((t, i) => (
                   <tr key={t.id}>
                     <td className={`mono ${i===0?"rank-1":i===1?"rank-2":i===2?"rank-3":""}`} style={{ fontSize: 16 }}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i + 1}`}</td>
-                    <td><div style={{ fontWeight: 700 }}>{t.name}</div><div className="mono" style={{ fontSize: 11, color: "var(--text2)" }}>{t.id}</div></td>
-                    <td><span className="score-pill">{t.mcq_score || 0} {(t.members ? Object.values(t.members).filter(m => m && m.mcq_submitted).length : (t.mcq_submitted ? 4 : 0))}/4 ✓</span></td>
+                    <td>
+                      <div style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                        {t.name}
+                        <button className="btn btn-outline btn-sm" style={{ padding: "2px 6px", fontSize: 10 }} onClick={() => unlockTeam(t.id)}>Unlock</button>
+                      </div>
+                      <div className="mono" style={{ fontSize: 11, color: "var(--text2)" }}>{t.id}</div>
+                    </td>
+                    <td>
+                      <div style={{ marginBottom: 4 }}>
+                        <span className="score-pill">{t.mcq_score || 0} {(t.members ? Object.values(t.members).filter(m => m && m.mcq_submitted).length : (t.mcq_submitted ? 4 : 0))}/4 ✓</span>
+                      </div>
+                      <div className="mono" style={{ fontSize: 10, color: "var(--text2)", whiteSpace: "nowrap" }}>
+                        M1:{t.members?.[1]?.mcq_score || 0} | M2:{t.members?.[2]?.mcq_score || 0} | M3:{t.members?.[3]?.mcq_score || 0} | M4:{t.members?.[4]?.mcq_score || 0}
+                      </div>
+                    </td>
                     <td><span className="score-pill" style={{ color: "var(--accent)", fontWeight: 700 }}>{t.total_score || 0}</span></td>
                   </tr>
                 ))}
@@ -1172,10 +1207,15 @@ function AdminPanel() {
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [user, setUser] = useState(null); // { team, role, memberId }
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem("codethon_user");
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  });
   const [round, setRound] = useState("waiting");
-  const [teamData, setTeamData] = useState(null);
-  const [showLanding, setShowLanding] = useState(true);
+  const [teamData, setTeamData] = useState(() => user ? user.team : null);
+  const [showLanding, setShowLanding] = useState(!user);
 
   const pollRound = useCallback(async () => {
     const r = await getCurrentRound();
@@ -1190,12 +1230,15 @@ export default function App() {
   }, [user, pollRound]);
 
   const handleLogin = (team, role, memberId) => {
-    setUser({ team, role, memberId });
+    const u = { team, role, memberId };
+    if (role === "admin") localStorage.setItem("codethon_user", JSON.stringify(u));
+    setUser(u);
     setTeamData(team);
     setShowLanding(false);
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("codethon_user");
     setUser(null);
     setTeamData(null);
     setShowLanding(true);
