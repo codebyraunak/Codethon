@@ -720,59 +720,94 @@ function MCQRound({ team, memberId, onUpdate }) {
   const q = MCQ_QUESTIONS[current];
 
   return (
-    <div ref={containerRef} style={{ minHeight: "100vh", background: "var(--bg)", paddingTop: 52 }}>
+    <div ref={containerRef} className="apple-theme test-body">
+      {/* Slim Progress Bar */}
+      <div className="test-progress-bar">
+          <div className="test-progress-fill" style={{ width: `${pct}%` }}></div>
+      </div>
+
       {violation && <ViolationAlert msg={violation} onDismiss={() => setViolation("")} />}
 
-      {/* Header */}
-      <div className="mcq-header">
-        <div className="mono" style={{ color: "var(--accent)", fontSize: 14, flex: 1 }}>{team.name}</div>
-        <div className="timer-wrap" style={{ margin: 0 }}>
-          <div className={`timer ${isDanger ? "danger" : ""}`}>{mins}:{secs}</div>
-          <div className="timer-bar-wrap" style={{ width: 120 }}>
-            <div className={`timer-bar ${isDanger ? "danger" : ""}`} style={{ width: `${pct}%` }}></div>
-          </div>
-        </div>
-        <div className="text-sm mono">{Object.keys(answers).length}/{MCQ_QUESTIONS.length} answered</div>
-        <button className="btn btn-danger btn-sm" onClick={() => setShowConfirm(true)}>Submit</button>
+      {/* Top Logo Bar */}
+      <div className="page-logo-bar">
+          <img src="/images/logo2.png" alt="NIE" className="page-logo page-logo-left" />
+          <img src="/images/logo1.png" alt="Anvaya" className="page-logo page-logo-right" />
       </div>
 
-      <div className="mcq-container">
-        {/* Q Sidebar */}
-        <div className="mcq-sidebar">
-          <div className="mcq-sidebar-title">Questions</div>
-          {MCQ_QUESTIONS.map((_, i) => (
-            <button key={i} onClick={() => setCurrent(i)} style={{ background: i === current ? "var(--accent)" : answers[i] !== undefined ? "rgba(0,255,135,0.15)" : "var(--bg3)", border: `1px solid ${i === current ? "var(--accent)" : answers[i] !== undefined ? "var(--accent)" : "var(--border)"}`, borderRadius: 4, padding: "8px 12px", cursor: "pointer", color: i === current ? "#000" : answers[i] !== undefined ? "var(--accent)" : "var(--text)", fontFamily: "Space Mono", fontSize: 12, textAlign: "left", transition: "all 0.15s" }}>
-              Q{i + 1}
-            </button>
-          ))}
-        </div>
+      {/* Navigation Header */}
+      <header className="test-header">
+          <div className="candidate-info">
+              <span id="displayNavName">{team.name}</span>
+              <span className="badge" id="displayNavUSN">M{memberId}</span>
+          </div>
+          <div id="questionCounterHeader" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+              {Object.keys(answers).length}/{MCQ_QUESTIONS.length} answered
+          </div>
+          <div className={`timer-display ${isDanger ? 'timer-warning' : ''}`} id="timerDisplay">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span id="timeRemaining">{mins}:{secs}</span>
+          </div>
+      </header>
 
-        {/* Question */}
-        <div className="mcq-content">
-          <div className="q-header">Question {current + 1} of {MCQ_QUESTIONS.length}</div>
-          <div className="q-text" dangerouslySetInnerHTML={{ __html: q.q.replace(/`([^`]+)`/g, '<code>$1</code>') }} />
-          <div className="options">
-            {q.options.map((opt, i) => (
-              <button key={i} className={`option ${answers[current] === i ? "selected" : ""}`} onClick={() => setAnswers(prev => ({ ...prev, [current]: i }))}>
-                <span style={{ color: "var(--text2)", marginRight: 8 }}>{String.fromCharCode(65 + i)}.</span> {opt}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24, gap: 12 }}>
-            <button className="btn btn-outline btn-sm" onClick={() => setCurrent(Math.max(0, current - 1))} disabled={current === 0}>← Prev</button>
-            <button className="btn btn-outline btn-sm" onClick={() => setCurrent(Math.min(MCQ_QUESTIONS.length - 1, current + 1))} disabled={current === MCQ_QUESTIONS.length - 1}>Next →</button>
-          </div>
-        </div>
-      </div>
+      {/* Main Test Container */}
+      <main className="test-container">
+          {/* Sidebar Progress Navigation */}
+          <aside className="test-sidebar">
+              <h3>Progress</h3>
+              <div className="question-nav" id="questionNavMap">
+                {MCQ_QUESTIONS.map((_, i) => {
+                  let cls = "nav-dot";
+                  if (answers[i] !== undefined) cls += " answered";
+                  if (i === current) cls += " active";
+                  return (
+                    <div key={i} className={cls} onClick={() => setCurrent(i)}>
+                      {i + 1}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="test-actions-sidebar">
+                  <button id="finalSubmitBtnSidebar" className="btn btn-primary w-100" onClick={() => setShowConfirm(true)}>Submit Assessment</button>
+              </div>
+          </aside>
+
+          {/* Question View Area */}
+          <section className="question-section">
+              <div className="question-card">
+                  <div className="question-header">
+                      <span className="question-counter" id="questionCounter">Question {current + 1} of {MCQ_QUESTIONS.length}</span>
+                  </div>
+
+                  <h2 className="question-text" id="questionText" dangerouslySetInnerHTML={{ __html: q.q.replace(/`([^`]+)`/g, '<code>$1</code>') }} />
+
+                  <div className="answer-area" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {q.options.map((opt, i) => (
+                      <button key={i} className={`btn ${answers[current] === i ? "btn-primary" : "btn-outline"}`} style={{ textAlign: 'left', padding: '1rem', height: 'auto', whiteSpace: 'normal', borderRadius: 'var(--radius-sm)', justifyContent: 'flex-start' }} onClick={() => setAnswers(prev => ({ ...prev, [current]: i }))}>
+                        <span style={{ color: answers[current] === i ? "rgba(255,255,255,0.7)" : "var(--text-muted)", marginRight: 8 }}>{String.fromCharCode(65 + i)}.</span> {opt}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="test-controls">
+                      <button className="btn btn-secondary" id="prevBtn" onClick={() => setCurrent(Math.max(0, current - 1))} disabled={current === 0}>Previous</button>
+                      <button className="btn btn-primary" id="nextBtn" onClick={() => setCurrent(Math.min(MCQ_QUESTIONS.length - 1, current + 1))} disabled={current === MCQ_QUESTIONS.length - 1}>Next</button>
+                  </div>
+              </div>
+          </section>
+      </main>
 
       {showConfirm && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 500 }}>
-          <div className="card" style={{ maxWidth: 360 }}>
-            <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Submit MCQ?</div>
-            <div className="text-sm" style={{ marginBottom: 24 }}>You've answered {Object.keys(answers).length}/{MCQ_QUESTIONS.length} questions. This cannot be undone.</div>
-            <div style={{ display: "flex", gap: 12 }}>
-              <button className="btn btn-outline" onClick={() => setShowConfirm(false)}>Cancel</button>
-              <button className="btn btn-danger" onClick={() => { setShowConfirm(false); handleSubmit(); }}>Submit Final</button>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }}>
+          <div className="warning-card">
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '1rem' }}>Submit MCQ?</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>You've answered {Object.keys(answers).length}/{MCQ_QUESTIONS.length} questions. This cannot be undone.</p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+              <button className="btn btn-secondary" onClick={() => setShowConfirm(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={() => { setShowConfirm(false); handleSubmit(); }}>Submit Final</button>
             </div>
           </div>
         </div>
