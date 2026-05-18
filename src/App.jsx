@@ -313,6 +313,94 @@ function ViolationAlert({ msg, onDismiss }) {
   return <div className="violation">⚠️ {msg}</div>;
 }
 
+// ─── LANDING PAGE ───────────────────────────────────────────────────────────────
+function LandingScreen({ onStart }) {
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    
+    // Intro animation
+    const centralLogo = document.getElementById('centralLogo');
+    const overlay = document.getElementById('intro-overlay');
+    const hero = document.getElementById('hero-section');
+    if (centralLogo && overlay && hero) {
+      setTimeout(() => {
+        centralLogo.classList.add('zoom-animate');
+        setTimeout(() => {
+          overlay.classList.add('fade-out');
+          hero.classList.add('fade-in');
+          setTimeout(() => { overlay.style.display = 'none'; }, 1200);
+        }, 2600);
+      }, 400);
+    }
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className="apple-theme landing-body" style={{ width: '100vw' }}>
+      {/* Intro Overlay */}
+      <div id="intro-overlay" className="intro-overlay">
+        <div className="central-logo-wrapper">
+          <img src="/images/logo1.png" alt="Anvaya" className="central-logo" id="centralLogo" />
+        </div>
+      </div>
+
+      <div className="landing-scroll-container">
+        {/* Hero Section */}
+        <section id="hero-section" className="hero-section">
+          <header className="hero-header">
+            <img src="/images/logo2.png" alt="NIE" className="hero-logo left-logo" />
+            <img src="/images/logo3.jpg" alt="Anvaya NIE-IUCEE" className="hero-logo right-logo" />
+          </header>
+          <div className="hero-content">
+            <h1 className="hero-title">Codethon 2026</h1>
+            <p className="hero-subtitle">Great engineers don't wait for opportunities.<br/>They build them.</p>
+          </div>
+        </section>
+
+        {/* Challenge Section */}
+        <section className="challenge-section reveal">
+          <div className="challenge-text">
+            <h2>You are not filling a form.</h2>
+            <h2><span>You are taking a challenge.</span></h2>
+          </div>
+          <div className="challenge-cards">
+            <div className="challenge-card reveal">
+              <div className="card-number">20</div>
+              <div className="card-label">Questions</div>
+            </div>
+            <div className="challenge-card reveal">
+              <div className="card-number">30</div>
+              <div className="card-label">Minutes</div>
+            </div>
+            <div className="challenge-card reveal">
+              <div className="card-number">▢</div>
+              <div className="card-label">Logic Based</div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="cta-section reveal">
+          <button className="cta-btn" onClick={onStart}>
+            Start the Assessment
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginLeft: 8}}>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
   const [teamName, setTeamName] = useState("");
@@ -379,52 +467,61 @@ function LoginScreen({ onLogin }) {
   };
 
   return (
-    <div className="screen">
-      <div className="card">
-        <div className="text-center mb-4" style={{ marginBottom: 32 }}>
-          <img src="./logo.png" alt="AnveshYA NIE-IUCEE Student Chapter" style={{ height: 60, marginBottom: 16, objectFit: "contain" }} />
-          <div className="logo">Code<span>thon</span></div>
-          <div className="tagline">coderun codefun 2026</div>
-        </div>
+    <div className="apple-theme auth-container" style={{ width: '100vw' }}>
+      {/* Top Logo Bar */}
+      <div className="page-logo-bar" style={{ position: 'fixed', top: 0, left: 0, right: 0 }}>
+          <img src="/images/logo2.png" alt="NIE" className="page-logo page-logo-left" />
+          <img src="/images/logo1.png" alt="Anvaya" className="page-logo page-logo-right" />
+      </div>
 
-        <div className="flex gap-2 mb-4" style={{ marginBottom: 20, gap: 8 }}>
-          {["login", "register"].map(m => (
-            <button key={m} className={`btn btn-sm ${mode === m ? "btn-primary" : "btn-outline"}`} style={{ flex: 1 }} onClick={() => { setMode(m); setError(""); setSuccess(""); }}>
-              {m === "login" ? "Login" : "Register"}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <label className="label">Team Name</label>
-            <input className="input" placeholder="e.g. The Debug Squad" value={teamName} onChange={e => setTeamName(e.target.value)} />
+      <div className="auth-card" style={{ marginTop: 60 }}>
+          <div className="auth-logo">
+              <img src="/images/logo4.png" alt="Codethon" />
           </div>
-          {mode === "login" && (
-            <div>
-              <label className="label">Login As</label>
-              <select className="input" value={loginAs} onChange={e => setLoginAs(e.target.value)}>
-                <option value="team">Whole Team (Treasure Hunt)</option>
-                <option value="1">Member 1 (MCQ)</option>
-                <option value="2">Member 2 (MCQ)</option>
-                <option value="3">Member 3 (MCQ)</option>
-                <option value="4">Member 4 (MCQ)</option>
-              </select>
-            </div>
-          )}
-          <div>
-            <label className="label">Password</label>
-            <input className="input mono" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && (mode === "register" ? register() : login())} />
+          <div className="auth-header">
+              <h2>Team Entry</h2>
+              <p>Enter your details to enter the arena.</p>
           </div>
 
-          {error && <div className="text-danger mono" style={{ fontSize: 13 }}>⚠ {error}</div>}
-          {success && <div className="mono" style={{ fontSize: 13, color: "var(--accent)" }}>✓ {success}</div>}
+          <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
+            {["login", "register"].map(m => (
+              <button key={m} className={`btn ${mode === m ? "btn-primary" : "btn-secondary"}`} style={{ flex: 1 }} onClick={() => { setMode(m); setError(""); setSuccess(""); }}>
+                {m === "login" ? "Login" : "Register"}
+              </button>
+            ))}
+          </div>
 
-          <button className="btn btn-primary" onClick={mode === "register" ? register : login} disabled={loading}>
-            {loading ? "..." : mode === "register" ? "Register & Join" : "Enter Arena"}
-          </button>
-        </div>
+          <div className="auth-form" onKeyDown={e => e.key === "Enter" && (mode === "register" ? register() : login())}>
+              <div className="form-group">
+                  <label>Team Name</label>
+                  <input type="text" value={teamName} onChange={e => setTeamName(e.target.value)} required placeholder="e.g. The Debug Squad" />
+              </div>
 
+              {mode === "login" && (
+                <div className="form-group">
+                  <label>Login As</label>
+                  <select value={loginAs} onChange={e => setLoginAs(e.target.value)} required>
+                      <option value="team">Whole Team (Treasure Hunt)</option>
+                      <option value="1">Member 1 (MCQ)</option>
+                      <option value="2">Member 2 (MCQ)</option>
+                      <option value="3">Member 3 (MCQ)</option>
+                      <option value="4">Member 4 (MCQ)</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="form-group">
+                  <label>Password</label>
+                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" style={{fontFamily: 'monospace'}} />
+              </div>
+
+              {error && <div className="error-msg">{error}</div>}
+              {success && <div style={{ color: "var(--success)", fontSize: "0.85rem", marginBottom: "1rem" }}>{success}</div>}
+
+              <button className="btn btn-primary w-100 mt-4" onClick={mode === "register" ? register : login} disabled={loading}>
+                {loading ? "..." : mode === "register" ? "Register & Join" : "Enter Arena"}
+              </button>
+          </div>
       </div>
     </div>
   );
@@ -1014,6 +1111,7 @@ export default function App() {
   const [user, setUser] = useState(null); // { team, role, memberId }
   const [round, setRound] = useState("waiting");
   const [teamData, setTeamData] = useState(null);
+  const [showLanding, setShowLanding] = useState(true);
 
   const pollRound = useCallback(async () => {
     const r = await getCurrentRound();
@@ -1030,11 +1128,13 @@ export default function App() {
   const handleLogin = (team, role, memberId) => {
     setUser({ team, role, memberId });
     setTeamData(team);
+    setShowLanding(false);
   };
 
   const handleLogout = () => {
     setUser(null);
     setTeamData(null);
+    setShowLanding(true);
   };
 
   const handleTeamUpdate = (updatedTeam) => { setTeamData(updatedTeam); };
@@ -1045,7 +1145,8 @@ export default function App() {
     <>
       <style>{css}</style>
       {showNav && <TopBar team={teamData} round={round} memberId={user.memberId} onLogout={handleLogout} />}
-      {!user && <LoginScreen onLogin={handleLogin} />}
+      {!user && showLanding && <LandingScreen onStart={() => setShowLanding(false)} />}
+      {!user && !showLanding && <LoginScreen onLogin={handleLogin} />}
       {user?.role === "admin" && <AdminPanel />}
       {user?.role === "team" && (() => {
         if (round === "waiting") return <WaitingRoom team={teamData} />;
