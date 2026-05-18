@@ -720,20 +720,18 @@ function MCQRound({ team, memberId, onUpdate }) {
   const [violation, setViolation] = useState("");
   const [violations, setViolations] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const containerRef = useRef(null);
-  const fullscreenRequested = useRef(false);
 
   const enterFullscreen = () => {
     const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen();
+    if (el.requestFullscreen) el.requestFullscreen().catch(err => console.log(err));
   };
 
-  useEffect(() => {
-    if (!fullscreenRequested.current && !submitted) {
-      setTimeout(enterFullscreen, 500);
-      fullscreenRequested.current = true;
-    }
-  }, [submitted]);
+  const handleStartTest = () => {
+    enterFullscreen();
+    setHasStarted(true);
+  };
 
   // Timer from server start
   useEffect(() => {
@@ -854,30 +852,43 @@ function MCQRound({ team, memberId, onUpdate }) {
         <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
         <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>MCQ Submitted!</div>
         <div className="text-sm" style={{ marginBottom: 24 }}>Your answers have been recorded. Wait for Round 2.</div>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+        
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 12 }}>
           <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "20px", flex: 1 }}>
             <div className="mono" style={{ fontSize: 40, color: "var(--accent)", fontWeight: 700 }}>
-              {Object.keys(answers).filter(key => {
-                const i = parseInt(key);
-                const q = MCQ_QUESTIONS[i];
-                if (!q) return false;
-                const a = answers[i];
-                if (Array.isArray(q.ans)) {
-                  return Array.isArray(a) && JSON.stringify([...a].sort()) === JSON.stringify([...q.ans].sort());
-                } else {
-                  return a === q.ans;
-                }
-              }).length * 2}
+              {memberData.mcq_score || 0}
             </div>
-            <div className="text-sm">points scored</div>
+            <div className="text-sm">Your Score</div>
           </div>
-          {rank !== null && (
-            <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "20px", flex: 1 }}>
-              <div className="mono" style={{ fontSize: 40, color: "var(--accent3)", fontWeight: 700 }}>#{rank}</div>
-              <div className="text-sm">current rank</div>
+          <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "20px", flex: 1 }}>
+            <div className="mono" style={{ fontSize: 40, color: "var(--accent3)", fontWeight: 700 }}>
+              {team.mcq_score || 0}
             </div>
-          )}
+            <div className="text-sm">Team Total Score</div>
+          </div>
         </div>
+
+        {rank !== null && (
+          <div style={{ background: "rgba(0,255,135,0.05)", borderRadius: 8, border: "1px solid rgba(0,255,135,0.2)", padding: "16px", flex: 1 }}>
+            <div className="text-sm">Current Team Rank</div>
+            <div className="mono" style={{ fontSize: 24, color: "var(--accent)", fontWeight: 700 }}>#{rank}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (!hasStarted) return (
+    <div className="screen pt-topbar">
+      <div className="card text-center">
+        <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>Ready to Begin?</div>
+        <div className="text-sm" style={{ marginBottom: 24 }}>
+          Your test session has been initiated by the admin.<br/>
+          Click the button below to enter fullscreen and start your timer.
+        </div>
+        <button className="btn btn-primary" onClick={handleStartTest} style={{ padding: "12px 32px", fontSize: 16 }}>
+          Enter Fullscreen & Start
+        </button>
       </div>
     </div>
   );
