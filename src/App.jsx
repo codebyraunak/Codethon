@@ -175,6 +175,26 @@ const MCQ_QUESTIONS = [
 
 
 
+];
+
+const RIDDLES = [
+  "I stand among a crowd yet I alone set the sky on fire every season. Machines sleep in rows beside me, indifferent to my blaze. People eat and laugh not far from where I root, yet they rarely look up. A night of music once shook the earth near my feet, and still I flowered on in silence.",
+  "I am neither wall nor door, yet I guard the face of a building every day. Circles come and go beside me, but I have never moved an inch. I wear a crown no jeweller crafted — flame-coloured, wild, and seasonal. Voices once sang beneath my canopy, and the stars above me did not flinch.",
+  "My siblings surround me, yet none of them burns the way I do. A huge wall faces me, a cart feeds the hungry behind me, and iron horses rest beside me. Once music spun beats into the air and the crowd moved beneath my gaze. I give no warmth despite my fire, for my fire is only colour.",
+  "I was rooted before the lot was paved. I have witnessed wheels arrive and depart, and one wild evening of bass and lights. Every year I dress in two colours that stop those who bother to notice. I stand in front of what you enter, among those who are green but not ablaze.",
+  "A wild of kin grows around me, yet I alone remember the taste of fire in my petals. The building beyond me watches with many eyes. A instrument’s heartbeat once pulsed through my roots without my permission. Ask the one who has seen me bloom: what stands between the space and the door, wearing sunset on its branches?",
+  "I blaze without burning, flame without heat,\nNear resting giants and hurried feet.\nBeside cheap bites and fading cheer,\nThe ember crown hides something near",
+  "Where music once shattered the silent air,\nA fire-colored guardian still stands there.\nNo smoke, no ash, no raging pyre —\nOnly branches dressed in fire.",
+  "Between hungry crowds and sleeping wheels,\nA burning tree its secret seals.\nStudents pass yet rarely see\nThe flaming king beneath the free sky.",
+  "I watched the fest in flashing light,\nNow only petals paint the site.\nSeek the blaze that roots below,\nWhere buses rest and cool winds blow.",
+  "Not the canteen, not parking too,\nBut somewhere standing between the two.\nA scarlet shadow guards the way,\nDropping sunsets every day.",
+  "My flowers fall like shattered flame,\nYet no one pauses at my name.\nNear horns, tea, and dusty air,\nYour hidden answer lingers there.",
+  "A silent inferno spreads its crown,\nPainting orange-red on the ground.\nNear where engines wait in line,\nThe treasure sleeps beneath my spine.",
+  "No fire fears the rain like I —\nFor mine blooms safely toward the sky.\nNear the fest’s forgotten sound,\nThe final clue may yet be found.",
+  "I burn through bloom, not through rage,\nWatching students cross my stage.\nNear the tiny feast of tea,\nThe answer waits beside me.",
+  "Find the tree that mimics flame,\nThough smoke and heat it never claimed.\nBy buses, snacks, and fest-night air —\nThe hidden prize is waiting there"
+];
+
 // Remove Firebase SDK imports because we are using the REST API
 // to avoid the 100 concurrent WebSocket connection limit on the Spark plan.
 const DB_URL = "https://codethon-34ed5-default-rtdb.firebaseio.com";
@@ -579,7 +599,8 @@ function LoginScreen({ onLogin }) {
         3: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false },
         4: { mcq_score: 0, mcq_answers: {}, mcq_submitted: false }
       },
-      mcq_score: 0, mcq_answers: {}, mcq_submitted: false, hunt_level: 1, hunt_score: 0, hunt_penalties: 0, total_score: 0 
+      mcq_score: 0, mcq_answers: {}, mcq_submitted: false, hunt_level: 1, hunt_score: 0, hunt_penalties: 0, total_score: 0,
+      riddle_index: Math.floor(Math.random() * 15)
     };
     teams[id] = team;
     await setTeams(teams);
@@ -1088,6 +1109,29 @@ function Leaderboard({ team }) {
   );
 }
 
+// ─── TREASURE HUNT ROUND ───────────────────────────────────────────────────────
+function TreasureHunt({ team }) {
+  const assignedIndex = team.riddle_index !== undefined ? team.riddle_index : (team.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % RIDDLES.length);
+  const riddle = RIDDLES[assignedIndex];
+  
+  return (
+    <div className="screen pt-topbar">
+      <div className="card text-center" style={{ maxWidth: 800, margin: "0 auto" }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🗺️</div>
+        <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>Round 2: Treasure Hunt</div>
+        <div className="text-sm" style={{ marginBottom: 24 }}>Find the location described in your team's unique riddle. All 4 members must go there.</div>
+        
+        <div style={{ background: "var(--bg3)", borderRadius: 12, padding: "32px", border: "1px solid var(--border)", textAlign: "left" }}>
+          <div className="text-accent" style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>Your Team's Clue</div>
+          <div style={{ fontSize: 20, lineHeight: 1.6, fontStyle: "italic", whiteSpace: "pre-wrap" }}>
+            "{riddle}"
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── ADMIN PANEL ──────────────────────────────────────────────────────────────
 function AdminPanel() {
   const [teams, setTeamsData] = useState({});
@@ -1135,6 +1179,7 @@ function AdminPanel() {
   const rounds = [
     { key: "waiting", label: "Waiting Room", desc: "Hold teams in lobby" },
     { key: "mcq", label: "Round 1 — MCQ", desc: "Start 30 min MCQ timer" },
+    { key: "treasure", label: "Round 2 — Treasure Hunt", desc: "Show team riddles" },
     { key: "leaderboard", label: "Leaderboard", desc: "Show final scores" },
   ];
 
@@ -1258,7 +1303,7 @@ export default function App() {
       {user?.role === "team" && (() => {
         if (round === "waiting") return <WaitingRoom team={teamData} />;
         if (round === "mcq") return <MCQRound team={teamData} memberId={user.memberId} onUpdate={handleTeamUpdate} />;
-
+        if (round === "treasure") return <TreasureHunt team={teamData} />;
         if (round === "leaderboard") return <Leaderboard team={teamData} />;
         return <WaitingRoom team={teamData} />;
       })()}
